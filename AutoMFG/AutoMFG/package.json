@@ -1,0 +1,33 @@
+{
+  "name": "automfg",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@react-pdf/renderer": "^4.5.1",
+    "@supabase/supabase-js": "^2.106.0",
+    "@tanstack/react-table": "^8.21.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^1.16.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-hook-form": "^7.76.0",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.15.1",
+    "recharts": "^3.8.1",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
+  }
+}

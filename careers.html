@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Careers at VIBE | Drive the Future of Mobility</title>
+    <meta name="description" content="Join VIBE Automotives and build the next generation of intelligent, autonomous, and sustainable electric vehicles. Explore open positions in Engineering, Production, and Supply Chain.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.2">
+    <style>
+        :root {
+            --glow-color: rgba(0, 240, 255, 0.15);
+        }
+
+        body {
+            position: relative;
+        }
+
+        /* Ambient Background Orbs */
+        .ambient-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -2;
+            opacity: 0.18;
+            pointer-events: none;
+        }
+        .orb-top-left {
+            width: 600px; height: 600px;
+            background: var(--primary);
+            top: -10%; left: -10%;
+        }
+        .orb-bottom-right {
+            width: 500px; height: 500px;
+            background: var(--secondary);
+            bottom: -10%; right: -10%;
+        }
+
+        /* Header / Hero Padding */
+        .careers-hero {
+            padding: 160px 0 80px;
+            text-align: center;
+            position: relative;
+        }
+
+        .careers-hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+            line-height: 1.1;
+        }
+
+        .careers-hero p.lead-text {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            line-height: 1.6;
+        }
+
+        /* What We Do Grid */
+        .what-we-do {
+            padding: 60px 0;
+        }
+
+        .w-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .w-text h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .w-text h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            margin-top: 0.8rem;
+        }
+
+        .w-text p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .w-visual {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            backdrop-filter: blur(16px);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .w-visual h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+        }
+
+        .value-pill {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .value-pill:hover {
+            border-color: rgba(0, 240, 255, 0.25);
+            background: rgba(0, 240, 255, 0.02);
+            transform: translateX(5px);
+        }
+
+        .value-pill span.icon {
+            font-size: 1.5rem;
+        }
+
+        .value-pill div h4 {
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .value-pill div p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Filter Controls */
+        .filter-section {
+            padding: 80px 0 40px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .filter-header h2 {
+            font-size: 2.2rem;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 320px;
+            width: 100%;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.8rem;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-family: inherit;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .filter-btns {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 0.6rem 1.4rem;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #000;
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0, 240, 255, 0.25);
+        }
+
+        /* Jobs List / Cards */
+        .jobs-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 80px;
+        }
+
+        .job-card {
+            background: rgba(15, 15, 20, 0.55);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            backdrop-filter: blur(12px);
+            transition: var(--transition);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .job-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 15px 30px rgba(0, 240, 255, 0.08);
+        }
+
+        .job-details h3 {
+            font-size: 1.6rem;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+        }
+
+        .job-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meta-tag {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .meta-tag.dept {
+            color: var(--primary);
+            background: rgba(0, 240, 255, 0.08);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 240, 255, 0.15);
+        }
+
+        .job-description {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.2rem;
+            max-width: 900px;
+        }
+
+        .job-requirements {
+            margin-top: 1rem;
+        }
+
+        .job-requirements h5 {
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .job-requirements ul {
+            list-style: none;
+            padding-left: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .req-tag {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .job-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1rem;
+        }
+
+        .job-salary {
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 1.15rem;
+        }
+
+        /* Cursor Glow */
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: -1;
+            background: radial-gradient(circle, rgba(0,240,255,0.08), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+
+        /* Form Overlay Modal overrides for Application Form */
+        .modal-content.wide {
+            max-width: 600px;
+        }
+        .modal-body form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+        .textarea-group textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-family: inherit;
+            transition: var(--transition);
+            resize: vertical;
+        }
+        .textarea-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 240, 255, 0.2);
+        }
+        .file-upload-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .file-upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            padding: 1rem;
+            border: 1px dashed var(--glass-border);
+            background: rgba(255,255,255,0.02);
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        .file-upload-btn:hover {
+            border-color: var(--primary);
+            background: rgba(0, 240, 255, 0.02);
+            color: var(--text-main);
+        }
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Application Success View */
+        .success-view {
+            text-align: center;
+            padding: 2rem 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .success-circle {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(0, 255, 102, 0.1);
+            border: 2px solid #00ff66;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #00ff66;
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
+            margin-bottom: 1rem;
+        }
+
+        .success-view h3 {
+            font-size: 1.8rem;
+            color: #00ff66;
+        }
+
+        .success-view p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            max-width: 420px;
+        }
+
+        @media (max-width: 968px) {
+            .w-grid {
+                grid-template-columns: 1fr;
+                gap: 2.5rem;
+            }
+            .job-card {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            .job-actions {
+                align-items: flex-start;
+            }
+            .careers-hero h1 {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 580px) {
+            .input-row {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+            .filter-btns {
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Glow Background Elements -->
+    <div class="ambient-glow orb-top-left"></div>
+    <div class="ambient-glow orb-bottom-right"></div>
+    <div class="cursor-glow" id="glow"></div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar glass-effect scrolled">
+        <div class="logo">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMOTIVES</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="index.html#showcase">Models</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#gallery">Gallery</a></li>
+        </ul>
+    </nav>
+
+    <!-- Careers Hero Page Title Section -->
+    <header class="careers-hero">
+        <div class="container">
+            <h1 class="reveal-text">DRIVE THE FUTURE OF <br><span class="gradient-text">MOBILITY</span></h1>
+            <p class="lead-text">At VIBE Automotives, we are fusing advanced artificial intelligence with next-generation electric powertrains. Join our team and help us build the future of intelligent electric vehicles.</p>
+            <a href="#positions" class="btn-glow">Explore Open Positions</a>
+        </div>
+    </header>
+
+    <!-- What We Do / Corporate Culture Section -->
+    <section class="what-we-do container">
+        <div class="w-grid">
+            <div class="w-text">
+                <h2>What We Do at VIBE</h2>
+                <p>VIBE Automotives represents the bleeding edge of intelligent EV engineering. Powered by our proprietary <strong>Antigravity OS</strong>, our vehicles aren't just electric; they are fully autonomous platforms capable of learning and adapting to driver behaviors and global route dynamics.</p>
+                <p>We work in cross-functional, highly collaborative agile pods. From R&D concept design (utilizing the <strong>AutoDev</strong> gateway) to real-time production loops on the stamping floor (monitored via the <strong>AutoMFG</strong> platform), our work is connected by a state-of-the-art database mesh that keeps manufacturing, development, and logistics operating in perfect synchrony.</p>
+                <p>If you're passionate about rewriting the rules of the automotive industry and creating carbon-neutral transportation networks, VIBE is where you belong.</p>
+            </div>
+            <div class="w-visual">
+                <h3>Our Core Values</h3>
+                
+                <div class="value-pill">
+                    <span class="icon">🚀</span>
+                    <div>
+                        <h4>Unbounded Innovation</h4>
+                        <p>We build technologies that others deem impossible.</p>
+                    </div>
+                </div>
+
+                <div class="value-pill">
+                    <span class="icon">🌿</span>
+                    <div>
+                        <h4>Zero-Emission Future</h4>
+                        <p>100% carbon-neutral production pipelines.</p>
+                    </div>
+                </div>
+
+                <div class="value-pill">
+                    <span class="icon">⚡</span>
+                    <div>
+                        <h4>Next-Gen Power</h4>
+                        <p>Developing ultra-high 900V architecture hubs.</p>
+                    </div>
+                </div>
+
+                <div class="value-pill">
+                    <span class="icon">🧠</span>
+                    <div>
+                        <h4>Autonomous Intelligence</h4>
+                        <p>Advancing RTOS Level 4 sensory driving.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Open Positions Section -->
+    <section class="filter-section container" id="positions">
+        <div class="filter-header">
+            <h2>Open <span>Positions</span></h2>
+            
+            <div class="search-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="jobSearch" placeholder="Search roles or technologies...">
+            </div>
+        </div>
+
+        <!-- Department Filters -->
+        <div class="filter-btns">
+            <button class="filter-btn active" data-filter="all">All Departments</button>
+            <button class="filter-btn" data-filter="engineering">Engineering (R&D)</button>
+            <button class="filter-btn" data-filter="production">Production (MFG)</button>
+            <button class="filter-btn" data-filter="logistics">Supply Chain (SCM)</button>
+            <button class="filter-btn" data-filter="executive">Executive & Admin</button>
+        </div>
+
+        <!-- Open Openings List -->
+        <div class="jobs-list" id="jobsList">
+            
+            <!-- Job 1 -->
+            <article class="job-card" data-dept="engineering">
+                <div class="job-details">
+                    <h3>Senior Powertrain Integration Engineer</h3>
+                    <div class="job-meta">
+                        <span class="meta-tag dept">Engineering & R&D</span>
+                        <span class="meta-tag">📍 Detroit, MI (Hybrid)</span>
+                        <span class="meta-tag">⏱️ Full-time</span>
+                    </div>
+                    <p class="job-description">Responsible for designing and integrating our next-generation 900V electric drivetrains with the Antigravity Chassis. You will collaborate closely with simulation, thermal management, and physical prototype build teams to sign off on APQP Gate 3 releases.</p>
+                    <div class="job-requirements">
+                        <h5>Desired Skills:</h5>
+                        <ul>
+                            <span class="req-tag">High-Voltage EV Systems</span>
+                            <span class="req-tag">Chassis CAD Layouts</span>
+                            <span class="req-tag">APQP Standards</span>
+                            <span class="req-tag">MATLAB / Simulink</span>
+                        </ul>
+                    </div>
+                </div>
+                <div class="job-actions">
+                    <span class="job-salary">$145,000 - $185,000</span>
+                    <button class="btn-glow apply-btn" data-role="Senior Powertrain Integration Engineer">Apply Now</button>
+                </div>
+            </article>
+
+            <!-- Job 2 -->
+            <article class="job-card" data-dept="engineering">
+                <div class="job-details">
+                    <h3>Antigravity OS Kernel Engineer</h3>
+                    <div class="job-meta">
+                        <span class="meta-tag dept">Software & R&D</span>
+                        <span class="meta-tag">📍 Silicon Valley, CA / Remote</span>
+                        <span class="meta-tag">⏱️ Full-time</span>
+                    </div>
+                    <p class="job-description">Develop low-latency, real-time operating system (RTOS) scheduling algorithms and hardware abstraction layers for Level 4 autonomous vehicle controls. You will optimize memory footprints and sensor-fusion data pipeline ingestion speeds.</p>
+                    <div class="job-requirements">
+                        <h5>Desired Skills:</h5>
+                        <ul>
+                            <span class="req-tag">C++ / Rust</span>
+                            <span class="req-tag">RTOS Architecture</span>
+                            <span class="req-tag">Sensor Fusion Pipelines</span>
+                            <span class="req-tag">Linux Driver Development</span>
+                        </ul>
+                    </div>
+                </div>
+                <div class="job-actions">
+                    <span class="job-salary">$160,000 - $210,000</span>
+                    <button class="btn-glow apply-btn" data-role="Antigravity OS Kernel Engineer">Apply Now</button>
+                </div>
+            </article>
+
+            <!-- Job 3 -->
+            <article class="job-card" data-dept="production">
+                <div class="job-details">
+                    <h3>Advanced Stamping Shift Supervisor</h3>
+                    <div class="job-meta">
+                        <span class="meta-tag dept">Production & MFG</span>
+                        <span class="meta-tag">📍 Fremont, CA (On-site)</span>
+                        <span class="meta-tag">⏱️ Full-time</span>
+                    </div>
+                    <p class="job-description">Oversee daily shift operations, plant safety protocols, and scrap reduction cycles on high-tonnage robotic stamping lines. Monitor real-time shift logs, respond to Andon alert escalations, and manage overall equipment effectiveness (OEE) targets.</p>
+                    <div class="job-requirements">
+                        <h5>Desired Skills:</h5>
+                        <ul>
+                            <span class="req-tag">Robotic Line Operation</span>
+                            <span class="req-tag">Shift Management</span>
+                            <span class="req-tag">OEE Metrics Optimization</span>
+                            <span class="req-tag">Andon Alert Response</span>
+                        </ul>
+                    </div>
+                </div>
+                <div class="job-actions">
+                    <span class="job-salary">$95,000 - $125,000</span>
+                    <button class="btn-glow apply-btn" data-role="Advanced Stamping Shift Supervisor">Apply Now</button>
+                </div>
+            </article>
+
+            <!-- Job 4 -->
+            <article class="job-card" data-dept="logistics">
+                <div class="job-details">
+                    <h3>Global Inbound Logistics Analyst</h3>
+                    <div class="job-meta">
+                        <span class="meta-tag dept">Supply Chain (SCM)</span>
+                        <span class="meta-tag">📍 Munich, Germany (Hybrid)</span>
+                        <span class="meta-tag">⏱️ Full-time</span>
+                    </div>
+                    <p class="job-description">Optimize raw material shipment lanes, supplier lead times, and battery pack inventory levels. You will use predictive modeling to identify logistics bottlenecks and negotiate freight lanes with global SCM providers.</p>
+                    <div class="job-requirements">
+                        <h5>Desired Skills:</h5>
+                        <ul>
+                            <span class="req-tag">SCM Forecasting Models</span>
+                            <span class="req-tag">Freight Negotiations</span>
+                            <span class="req-tag">Inventory Audits</span>
+                            <span class="req-tag">SQL & Data Analytics</span>
+                        </ul>
+                    </div>
+                </div>
+                <div class="job-actions">
+                    <span class="job-salary">€80,000 - €105,000</span>
+                    <button class="btn-glow apply-btn" data-role="Global Inbound Logistics Analyst">Apply Now</button>
+                </div>
+            </article>
+
+            <!-- Job 5 -->
+            <article class="job-card" data-dept="executive">
+                <div class="job-details">
+                    <h3>Executive Operations Liaison</h3>
+                    <div class="job-meta">
+                        <span class="meta-tag dept">Executive & Administration</span>
+                        <span class="meta-tag">📍 Detroit, MI (On-site)</span>
+                        <span class="meta-tag">⏱️ Full-time</span>
+                    </div>
+                    <p class="job-description">Coordinate cross-functional department audits, review strategic roadmap metrics, and facilitate decision pipeline execution directly reporting to the CEO. Excellent organizational skills and confidentiality are critical for this boardroom role.</p>
+                    <div class="job-requirements">
+                        <h5>Desired Skills:</h5>
+                        <ul>
+                            <span class="req-tag">Corporate Communications</span>
+                            <span class="req-tag">Cross-Functional Liaison</span>
+                            <span class="req-tag">Strategic Roadmap Audits</span>
+                            <span class="req-tag">Project Management</span>
+                        </ul>
+                    </div>
+                </div>
+                <div class="job-actions">
+                    <span class="job-salary">$110,000 - $140,000</span>
+                    <button class="btn-glow apply-btn" data-role="Executive Operations Liaison">Apply Now</button>
+                </div>
+            </article>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <div class="logo">
+                    <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_footer)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_footer)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_footer" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_footer" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE</span>
+                </div>
+                <p>Pioneering the future of mobility through integrated enterprise intelligence.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Vehicles</h4>
+                <ul>
+                    <li><a href="index.html#showcase">VIBE Echelon</a></li>
+                    <li><a href="index.html#showcase">VIBE Horizon</a></li>
+                    <li><a href="index.html#showcase">VIBE Apex</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="index.html#about">About VIBE</a></li>
+                    <li><a href="careers.html" style="color: var(--primary);">Careers</a></li>
+                    <li><a href="sustainability.html">Sustainability</a></li>
+                    <li><a href="news.html">News & Press</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Experience</h4>
+                <ul>
+                    <li><a href="#" class="open-test-drive-btn">Book a Test Drive</a></li>
+                    <li><a href="index.html#gallery">Find a Gallery</a></li>
+                    <li><a href="index.html#openLoginBtn">Corporate Login</a></li>
+                    <li><a href="#" class="open-support-btn">Support & Help</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 VIBE Automotives. All rights reserved.</p>
+            <div class="legal">
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Glassmorphic Application Modal Overlay -->
+    <div id="applyModal" class="modal">
+        <div class="modal-content glass-effect wide">
+            <span class="close-modal" id="closeApplyModal">&times;</span>
+            
+            <!-- Default Form View -->
+            <div class="modal-body" id="formContainer">
+                <div class="modal-logo">
+                    <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_modal)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_modal)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_modal" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_modal" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE CAREERS</span>
+                </div>
+                <h3>Apply for Position</h3>
+                <p class="modal-subtitle" id="applyRoleTitle">Role Title Placeholder</p>
+                
+                <form id="applyForm">
+                    <input type="hidden" id="appliedRole" name="appliedRole">
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="applicantName">Full Name</label>
+                            <input type="text" id="applicantName" required placeholder="John Doe">
+                        </div>
+                        <div class="input-group">
+                            <label for="applicantEmail">Email Address</label>
+                            <input type="email" id="applicantEmail" required placeholder="john.doe@example.com">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="applicantPhone">Phone Number</label>
+                            <input type="tel" id="applicantPhone" required placeholder="+1 (555) 019-2834">
+                        </div>
+                        <div class="input-group">
+                            <label for="portfolioUrl">Portfolio or GitHub Link</label>
+                            <input type="url" id="portfolioUrl" placeholder="https://github.com/username">
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Resume / CV Upload (PDF, Word, or Text)</label>
+                        <div class="file-upload-wrapper">
+                            <div class="file-upload-btn" id="fileUploadDisplay">
+                                📤 <span>Click or Drag to Upload Resume</span>
+                            </div>
+                            <input type="file" id="resumeFile" required accept=".pdf,.doc,.docx,.txt">
+                        </div>
+                    </div>
+
+                    <div class="textarea-group">
+                        <label for="coverLetter">Cover Letter / Notes</label>
+                        <textarea id="coverLetter" placeholder="Describe why you are a great fit for the VIBE Automotives team..."></textarea>
+                    </div>
+
+                    <div class="input-group checkbox-group" style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 1.5rem; margin-top: 1rem;">
+                        <input type="checkbox" id="appConsent" required style="width: auto; margin-top: 0.25rem; cursor: pointer;">
+                        <label for="appConsent" style="color: var(--text-muted); font-size: 0.85rem; cursor: pointer; text-align: left;">I agree to the <a href="privacy.html" target="_blank" style="color: var(--primary); text-decoration: none;">Privacy Policy</a> and <a href="terms.html" target="_blank" style="color: var(--primary); text-decoration: none;">Terms of Service</a>.</label>
+                    </div>
+
+                    <button type="submit" class="btn-glow full-width" id="btnSubmitApp">Submit Application</button>
+                </form>
+            </div>
+
+            <!-- Successful Submission View -->
+            <div class="success-view" id="successContainer">
+                <div class="success-circle">✓</div>
+                <h3>Application Submitted!</h3>
+                <p>Thank you for applying to VIBE Automotives. Your credentials for the <strong id="successRoleText" style="color: var(--primary);">Role Title</strong> position have been recorded in our talent acquisition pipeline.</p>
+                <p style="font-size: 0.9rem;">Our corporate hiring supervisors will review your resume and contact you at the provided email address within 48 hours.</p>
+                <button class="btn-glow" id="btnSuccessClose" style="margin-top: 1rem; padding: 0.6rem 2rem;">Return to Careers</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cursor Glow Positioning
+        const glow = document.getElementById('glow');
+        if (glow) {
+            window.addEventListener('mousemove', e => {
+                glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+            });
+        }
+
+        // Job Filtering Logic
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const jobCards = document.querySelectorAll('.job-card');
+        const jobSearch = document.getElementById('jobSearch');
+
+        function filterJobs() {
+            const query = jobSearch.value.toLowerCase().trim();
+            const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+
+            jobCards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const desc = card.querySelector('.job-description').textContent.toLowerCase();
+                const tags = Array.from(card.querySelectorAll('.req-tag')).map(t => t.textContent.toLowerCase()).join(' ');
+                const matchesSearch = title.includes(query) || desc.includes(query) || tags.includes(query);
+                
+                const cardDept = card.getAttribute('data-dept');
+                const matchesDept = activeFilter === 'all' || cardDept === activeFilter;
+
+                if (matchesSearch && matchesDept) {
+                    card.style.display = 'grid';
+                    setTimeout(() => card.style.opacity = '1', 10);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                filterJobs();
+            });
+        });
+
+        if (jobSearch) {
+            jobSearch.addEventListener('input', filterJobs);
+        }
+
+        // Modal Display Controls
+        const applyModal = document.getElementById('applyModal');
+        const closeApplyModal = document.getElementById('closeApplyModal');
+        const applyForm = document.getElementById('applyForm');
+        const formContainer = document.getElementById('formContainer');
+        const successContainer = document.getElementById('successContainer');
+        const applyRoleTitle = document.getElementById('applyRoleTitle');
+        const appliedRole = document.getElementById('appliedRole');
+        const successRoleText = document.getElementById('successRoleText');
+        const fileInput = document.getElementById('resumeFile');
+        const fileDisplay = document.getElementById('fileUploadDisplay');
+
+        // File upload UI interaction
+        if (fileInput && fileDisplay) {
+            fileInput.addEventListener('change', (e) => {
+                if (fileInput.files.length > 0) {
+                    fileDisplay.querySelector('span').textContent = `Selected: ${fileInput.files[0].name}`;
+                    fileDisplay.style.borderColor = 'var(--primary)';
+                    fileDisplay.style.color = 'var(--text-main)';
+                } else {
+                    fileDisplay.querySelector('span').textContent = 'Click or Drag to Upload Resume';
+                    fileDisplay.style.borderColor = 'var(--glass-border)';
+                    fileDisplay.style.color = 'var(--text-muted)';
+                }
+            });
+        }
+
+        // Launch Modal on Button Click
+        document.querySelectorAll('.apply-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const roleName = btn.getAttribute('data-role');
+                applyRoleTitle.textContent = roleName;
+                appliedRole.value = roleName;
+                successRoleText.textContent = roleName;
+                
+                // Show modal
+                applyModal.style.display = 'flex';
+                setTimeout(() => applyModal.classList.add('show'), 10);
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        // Hide Modal Helper
+        const hideApplyModal = () => {
+            applyModal.classList.remove('show');
+            setTimeout(() => {
+                applyModal.style.display = 'none';
+                // Reset form state
+                applyForm.reset();
+                if (fileDisplay) {
+                    fileDisplay.querySelector('span').textContent = 'Click or Drag to Upload Resume';
+                    fileDisplay.style.borderColor = 'var(--glass-border)';
+                    fileDisplay.style.color = 'var(--text-muted)';
+                }
+                formContainer.style.display = 'block';
+                successContainer.style.display = 'none';
+            }, 300);
+            document.body.style.overflow = '';
+        };
+
+        if (closeApplyModal) {
+            closeApplyModal.addEventListener('click', hideApplyModal);
+        }
+
+        applyModal.addEventListener('click', (e) => {
+            if (e.target === applyModal) {
+                hideApplyModal();
+            }
+        });
+
+        // Handle Application Form Submit
+        if (applyForm) {
+            applyForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                // Simulate processing/network lag
+                const submitBtn = document.getElementById('btnSubmitApp');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Submitting...';
+                submitBtn.disabled = true;
+
+                setTimeout(() => {
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    
+                    // Show success screen
+                    formContainer.style.display = 'none';
+                    successContainer.style.display = 'flex';
+                }, 1000);
+            });
+        }
+
+        // Close on Success Return Button
+        const btnSuccessClose = document.getElementById('btnSuccessClose');
+        if (btnSuccessClose) {
+            btnSuccessClose.addEventListener('click', hideApplyModal);
+        }
+    </script>
+    <script src="test-drive.js"></script>
+</body>
+</html>

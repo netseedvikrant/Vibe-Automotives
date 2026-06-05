@@ -1,0 +1,255 @@
+.ddr-dashboard-container {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ddr-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.ddr-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.ddr-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.ddr-main-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar: Pending Reviews / Corrections */
+.ddr-sidebar {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.review-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-card {
+  padding: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.review-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.review-card.active {
+  border-color: var(--accent);
+  background: rgba(0, 242, 255, 0.05);
+}
+
+.review-card h4 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.review-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.severity-pill {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.severity-pill.critical { background: rgba(255, 51, 102, 0.15); color: #ff3366; border: 1px solid rgba(255, 51, 102, 0.3); }
+.severity-pill.high { background: rgba(255, 153, 0, 0.15); color: #ff9900; border: 1px solid rgba(255, 153, 0, 0.3); }
+.severity-pill.medium { background: rgba(255, 204, 0, 0.15); color: #ffcc00; border: 1px solid rgba(255, 204, 0, 0.3); }
+.severity-pill.low { background: rgba(0, 204, 102, 0.15); color: #00cc66; border: 1px solid rgba(0, 204, 102, 0.3); }
+
+/* Main Workspace */
+.ddr-workspace {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.cad-viewer-panel {
+  height: 40%;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05), #0a0a0f);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.cad-overlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+.viewer-tool {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  color: white;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.viewer-tool:hover { background: var(--accent); color: #000; }
+
+.comments-panel {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comment-thread {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.comment-author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.author-role {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.comment-body {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.comment-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.action-btn.resolve {
+  background: rgba(0, 242, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.action-btn.resolve:hover {
+  background: var(--accent);
+  color: #000;
+}
+
+.add-comment-box {
+  margin-top: auto;
+  padding: 16px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-comment-box textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  resize: none;
+  font-family: inherit;
+}
+
+.add-comment-box textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.comment-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.severity-select {
+  background: rgba(255,255,255,0.05);
+  color: white;
+  border: 1px solid var(--border);
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}

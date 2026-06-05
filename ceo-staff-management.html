@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE Executive | Staff Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+        @media (max-width: 860px) { .cursor-glow { display: none; } }
+        :root {
+            --bg-dark: #040408;
+            --bg-darker: #000000;
+            --primary: #ffd700;
+            --secondary: #ff8c00;
+            --text-main: #ffffff;
+            --text-muted: #8892b0;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(10, 10, 15, 0.6);
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background */
+        .glow-orb {
+            position: absolute;
+            width: 700px; height: 700px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+            top: -10%; left: -10%;
+            background: radial-gradient(circle, var(--primary), var(--secondary));
+        }
+
+        /* Navbar */
+        .navbar {
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 800;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #000;
+        }
+
+        /* Container Layout */
+        .container {
+            max-width: 1250px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            z-index: 1;
+        }
+
+        .header-section {
+            margin-bottom: 1rem;
+        }
+
+        .badge {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            color: var(--primary);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .header-section h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            line-height: 1.15;
+        }
+
+        .header-section p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 800px;
+        }
+
+        /* Staff Table */
+        .staff-table-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            overflow-x: auto;
+        }
+
+        .staff-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .staff-table th {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .staff-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .staff-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .staff-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .profile-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #000;
+            font-size: 1.1rem;
+        }
+
+        .staff-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .staff-email {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .performance-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin-top: 4px;
+            position: relative;
+        }
+
+        .performance-bar-fill {
+            height: 100%;
+            background: #00ff66;
+            border-radius: 4px;
+            box-shadow: 0 0 8px #00ff66;
+        }
+        
+        .performance-bar-fill.medium {
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+        
+        .performance-bar-fill.low {
+            background: #ff4e4e;
+            box-shadow: 0 0 8px #ff4e4e;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-main);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-action:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-connect {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: #00f0ff;
+        }
+
+        .btn-connect:hover {
+            background: #00f0ff;
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: var(--bg-darker);
+            z-index: 10;
+        }
+
+        @media (max-width: 968px) {
+            .header-section h1 { font-size: 2.2rem; }
+            .nav-links { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb"></div>
+
+    <nav class="navbar">
+        <a href="portal.html" class="logo">
+            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#FFD700"/>
+                        <stop offset="1" stop-color="#FF8C00"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE EXECUTIVE</span>
+        </a>
+        <div class="nav-links">
+            <a href="ceo-dashboard.html">Process Dashboard</a>
+            <a href="ceo-staff-management.html" class="active">Staff Management</a>
+            <a href="ceo-eom.html">Employee of the Month</a>
+        </div>
+        <a href="portal.html" class="back-link">
+            &larr; Back to Portal
+        </a>
+    </nav>
+
+    <!-- Supabase Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+
+    <main class="container">
+        <div class="header-section" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <span class="badge">Human Resources</span>
+                <h1>Staff Management</h1>
+                <p>Review employee performance metrics, initiate direct comms, and manage department access rights across the VIBE enterprise.</p>
+            </div>
+            <button id="btn-refresh-staff" style="background: rgba(255, 215, 0, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 0.7rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: var(--transition);">
+                🔄 Sync Staff Registry
+            </button>
+        </div>
+
+        <div class="staff-table-container">
+            <table class="staff-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Role</th>
+                        <th>Performance Score</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamically populated -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 VIBE Automotives. All rights reserved. Executive Board Confidential.</p>
+    </footer>
+
+    <script>
+        // Restrict access to CEO only
+        document.addEventListener('DOMContentLoaded', () => {
+            const userSession = sessionStorage.getItem('vibe_user');
+            if (!userSession) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const user = JSON.parse(userSession);
+            if (user.department !== 'EXECUTIVE') {
+                window.location.href = 'portal.html';
+                return;
+            }
+
+            // Load staff
+            loadStaff();
+
+            // Refresh listener
+            document.getElementById('btn-refresh-staff').addEventListener('click', loadStaff);
+        });
+
+        async function loadStaff() {
+            const tbody = document.querySelector('.staff-table tbody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--primary); padding: 3rem;"><h3>Syncing enterprise staff registry...</h3></td></tr>';
+
+            try {
+                if (window.supabaseInit) {
+                    await window.supabaseInit;
+                }
+                const client = window.supabaseClient;
+                if (!client) throw new Error("Supabase client not initialized.");
+
+                // Fetch R&D users (users)
+                let rdUsers = [];
+                try {
+                    const { data, error } = await client.from('users').select('*');
+                    if (!error && data) rdUsers = data;
+                } catch (e) {
+                    console.warn("Failed to fetch users from R&D:", e);
+                }
+
+                // Fetch SCM/MFG users (erp_users)
+                let erpUsers = [];
+                try {
+                    const { data, error } = await client.from('erp_users').select('*');
+                    if (!error && data) erpUsers = data;
+                } catch (e) {
+                    console.warn("Failed to fetch erp_users:", e);
+                }
+
+                // Merge lists
+                let staffList = [];
+                const addedEmails = new Set();
+
+                // Add R&D users
+                rdUsers.forEach(u => {
+                    if (u.email === 'ceo@vibe.com' || u.role === 'CEO') return;
+                    addedEmails.add(u.email.toLowerCase());
+                    staffList.push({
+                        name: u.full_name,
+                        email: u.email,
+                        department: 'AutoDev / R&D',
+                        role: u.role || 'Design Engineer',
+                        performance: u.email.includes('chen') ? 98 : (u.email.includes('reyes') ? 45 : Math.floor(Math.random() * 20) + 80)
+                    });
+                });
+
+                // Add ERP users
+                erpUsers.forEach(u => {
+                    if (u.email === 'ceo@vibe.com' || u.role === 'CEO' || addedEmails.has(u.email.toLowerCase())) return;
+                    addedEmails.add(u.email.toLowerCase());
+
+                    let dept = 'AutoSCM / Procurement';
+                    if (u.department === 'EXECUTIVE') return;
+                    if (u.department) {
+                        dept = `AutoSCM / ${u.department}`;
+                    }
+                    if (u.role.toLowerCase().includes('mfg') || u.role.toLowerCase().includes('assembly') || u.role.toLowerCase().includes('plant') || u.role.toLowerCase().includes('shift')) {
+                        dept = 'AutoMFG / Production';
+                    }
+
+                    // Performance hardcoded matching for known mock staff
+                    let perf = Math.floor(Math.random() * 30) + 70;
+                    if (u.email.includes('johnson')) perf = 88;
+                    else if (u.email.includes('kinsley')) perf = 72;
+                    else if (u.email.includes('wong')) perf = 93;
+
+                    staffList.push({
+                        name: u.full_name,
+                        email: u.email,
+                        department: dept,
+                        role: u.role || 'Logistics Member',
+                        performance: perf
+                    });
+                });
+
+                // Fallback if no users loaded
+                if (staffList.length === 0) {
+                    staffList = getMockStaff();
+                }
+
+                renderStaff(staffList);
+
+            } catch (err) {
+                console.error("Failed to load staff, loading mockups:", err);
+                renderStaff(getMockStaff());
+            }
+        }
+
+        function renderStaff(list) {
+            const tbody = document.querySelector('.staff-table tbody');
+            tbody.innerHTML = '';
+
+            list.forEach(s => {
+                const initials = s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
+                let barClass = '';
+                if (s.performance >= 90) {
+                    barClass = '';
+                } else if (s.performance >= 60) {
+                    barClass = 'medium';
+                } else {
+                    barClass = 'low';
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div class="profile-cell">
+                            <div class="avatar">${initials}</div>
+                            <div>
+                                <div class="staff-name">${s.name}</div>
+                                <div class="staff-email">${s.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${s.department}</td>
+                    <td>${s.role}</td>
+                    <td>
+                        ${s.performance}%
+                        <div class="performance-bar-bg">
+                            <div class="performance-bar-fill ${barClass}" style="width: ${s.performance}%;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="btn-action" onclick="manageStaff('${s.email}', '${s.name}')">Manage</button>
+                            <button class="btn-action btn-connect" onclick="messageStaff('${s.email}', '${s.name}')">Message</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getMockStaff() {
+            return [
+                { name: "Sarah Chen", email: "s.chen@vibe.com", department: "AutoDev / R&D", role: "Lead Thermal Engineer", performance: 98 },
+                { name: "Marcus Johnson", email: "m.johnson@automfg.io", department: "AutoMFG / Production", role: "Plant Manager", performance: 88 },
+                { name: "Liam Kinsley", email: "l.kinsley@vibe.com", department: "AutoSCM / Procurement", role: "Logistics Head", performance: 72 },
+                { name: "David Reyes", email: "d.reyes@vibe.com", department: "AutoDev / R&D", role: "Junior CAD Designer", performance: 45 },
+                { name: "Alicia Wong", email: "a.wong@automfg.io", department: "AutoMFG / Production", role: "Shift Supervisor", performance: 93 }
+            ];
+        }
+
+        function manageStaff(email, name) {
+            const action = prompt(`Manage access rights for ${name} (${email}). Enter 'REVOKE' to suspend access, or 'PROMOTE' to upgrade roles:`, 'PROMOTE');
+            if (action) {
+                alert(`Action "${action}" submitted for ${name}. Changes will be synced to enterprise RBAC database.`);
+            }
+        }
+
+        function messageStaff(email, name) {
+            const message = prompt(`Send direct message to ${name} (${email}):`);
+            if (message) {
+                alert(`Message sent to ${name}: "${message}"`);
+            }
+        }
+    </script>
+    <div class="cursor-glow" id="glow"></div>
+    <script>
+        const glow = document.getElementById('glow');
+        if (glow) window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+    </script>
+</body>
+</html>

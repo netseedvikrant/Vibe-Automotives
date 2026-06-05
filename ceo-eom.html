@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE Executive | Employee of the Month</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+        @media (max-width: 860px) { .cursor-glow { display: none; } }
+        :root {
+            --bg-dark: #040408;
+            --bg-darker: #000000;
+            --primary: #ffd700;
+            --secondary: #ff8c00;
+            --text-main: #ffffff;
+            --text-muted: #8892b0;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(10, 10, 15, 0.6);
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background */
+        .glow-orb {
+            position: absolute;
+            width: 700px; height: 700px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+            top: -10%; left: -10%;
+            background: radial-gradient(circle, var(--primary), var(--secondary));
+        }
+
+        /* Navbar */
+        .navbar {
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 800;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #000;
+        }
+
+        /* Container Layout */
+        .container {
+            max-width: 1250px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            z-index: 1;
+        }
+
+        .header-section {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .badge {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            color: var(--primary);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .header-section h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            line-height: 1.15;
+        }
+
+        .header-section p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Candidates Grid */
+        .candidates-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .candidate-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .candidate-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .candidate-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(255, 215, 0, 0.15);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .candidate-card:hover::before {
+            opacity: 1;
+        }
+
+        .avatar-large {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #000;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.2);
+            border: 3px solid rgba(255,255,255,0.1);
+        }
+
+        .candidate-card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .candidate-card .role {
+            color: var(--primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .candidate-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .btn-select {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .btn-select:hover {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #000;
+            border-color: transparent;
+        }
+        
+        .success-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .success-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .success-content {
+            background: rgba(20, 20, 25, 0.9);
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            padding: 4rem;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
+            transform: translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .success-overlay.show .success-content {
+            transform: translateY(0);
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .success-content h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+        
+        .success-content p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+        
+        .btn-close {
+            background: var(--text-main);
+            color: #000;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .btn-close:hover {
+            background: var(--primary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: var(--bg-darker);
+            z-index: 10;
+        }
+
+        @media (max-width: 968px) {
+            .candidates-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .header-section h1 { font-size: 2.2rem; }
+            .nav-links { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb"></div>
+
+    <nav class="navbar">
+        <a href="portal.html" class="logo">
+            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#FFD700"/>
+                        <stop offset="1" stop-color="#FF8C00"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE EXECUTIVE</span>
+        </a>
+        <div class="nav-links">
+            <a href="ceo-dashboard.html">Process Dashboard</a>
+            <a href="ceo-staff-management.html">Staff Management</a>
+            <a href="ceo-eom.html" class="active">Employee of the Month</a>
+        </div>
+        <a href="portal.html" class="back-link">
+            &larr; Back to Portal
+        </a>
+    </nav>
+
+    <main class="container">
+        <div class="header-section">
+            <span class="badge">Recognition</span>
+            <h1>Select Employee of the Month</h1>
+            <p>Review the top performing candidates based on this month's KPI aggregation and select the employee to be featured across the VIBE portal.</p>
+        </div>
+
+        <div class="candidates-grid">
+            <!-- Candidate 1 -->
+            <div class="candidate-card">
+                <div class="avatar-large">SC</div>
+                <h3>Sarah Chen</h3>
+                <div class="role">Lead Thermal Engineer</div>
+                <p>"Solved complex thermal dissipation limits on high-current fast charging systems, keeping our designs 3 weeks ahead of schedule."</p>
+                <button class="btn-select" onclick="selectEOM('Sarah Chen')">Select as EOM</button>
+            </div>
+
+            <!-- Candidate 2 -->
+            <div class="candidate-card">
+                <div class="avatar-large">AW</div>
+                <h3>Alicia Wong</h3>
+                <div class="role">Shift Supervisor</div>
+                <p>"Maintained 99.4% OEE on the primary assembly line and reduced average Andon cord resolution time by 45% this month."</p>
+                <button class="btn-select" onclick="selectEOM('Alicia Wong')">Select as EOM</button>
+            </div>
+
+            <!-- Candidate 3 -->
+            <div class="candidate-card">
+                <div class="avatar-large">MJ</div>
+                <h3>Marcus Johnson</h3>
+                <div class="role">Plant Manager</div>
+                <p>"Successfully integrated the new automated welding stations with zero downtime and improved overall plant safety metrics."</p>
+                <button class="btn-select" onclick="selectEOM('Marcus Johnson')">Select as EOM</button>
+            </div>
+        </div>
+    </main>
+
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-content">
+            <div class="success-icon">🏆</div>
+            <h2>Selection Confirmed!</h2>
+            <p><strong id="eomName"></strong> has been officially designated as the Employee of the Month. A notification has been dispatched to HR and the global portal.</p>
+            <button class="btn-close" onclick="closeOverlay()">Close</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 VIBE Automotives. All rights reserved. Executive Board Confidential.</p>
+    </footer>
+
+    <script>
+        // Restrict access to CEO only
+        document.addEventListener('DOMContentLoaded', () => {
+            const userSession = sessionStorage.getItem('vibe_user');
+            if (!userSession) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const user = JSON.parse(userSession);
+            if (user.department !== 'EXECUTIVE') {
+                window.location.href = 'portal.html';
+            }
+        });
+        
+        function selectEOM(name) {
+            document.getElementById('eomName').textContent = name;
+            const overlay = document.getElementById('successOverlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                overlay.classList.add('show');
+            }, 10);
+            
+            // Optionally save to local storage so it reflects on portal
+            localStorage.setItem('vibe_current_eom', name);
+        }
+        
+        function closeOverlay() {
+            const overlay = document.getElementById('successOverlay');
+            overlay.classList.remove('show');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 400);
+        }
+    </script>
+    <div class="cursor-glow" id="glow"></div>
+    <script>
+        const glow = document.getElementById('glow');
+        if (glow) window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+    </script>
+</body>
+</html>

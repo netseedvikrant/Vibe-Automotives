@@ -1,0 +1,202 @@
+PRD-02: Manufacturing & Production Department Workflow Platform
+Product Name: AutoMFG — Manufacturing Execution & Production Workflow SuiteVersion: 1.0
+1. Product Overview
+AutoMFG is the manufacturing and production workflow module governing everything from Production Planning, Work Order Management, Assembly Line Operations, Machine/Tool Management, Scrap & Rework tracking, Shift Handover, and OEE monitoring. It acts as the bridge between ERP (SAP/Oracle) and the shop floor.
+2. Goals & Objectives
+Automate production order creation and release to shop floor
+Enable real-time production monitoring with OEE dashboards
+Digitize shift handover and machine maintenance requests
+Track scrap, rework, and first-pass yield at each work center
+Provide full traceability from raw material to finished vehicle (VIN-level)
+3. Scope
+In Scope:
+Production Planning & Scheduling Workflow
+Work Order (WO) Management Workflow
+Assembly Line Operations & Takt Management
+Tooling & Equipment Management Workflow
+Shift Handover Workflow
+Scrap & Rework Workflow
+Production Quality Gate Workflow
+Machine Breakdown / Maintenance Request Workflow
+OEE Tracking Dashboard
+End-of-Line (EOL) Testing Workflow
+Out of Scope:
+ERP financial production costing (integration only)
+Physical MES sensor integration (integration spec provided)
+4. User Roles & Permissions
+Role
+Permissions
+Production Manager
+Full access, approve/reject WOs, view all plant data
+Shift Supervisor
+Manage shift operations, sign off handovers
+Line Leader
+Execute WOs, report scrap/rework, flag issues
+Machine Operator
+Log production quantities, defect entries
+Production Planner
+Create/modify production schedules
+Maintenance Technician
+Accept breakdown requests, update machine status
+Quality Inspector
+Quality gate inspection entry
+Plant Manager
+Executive dashboards, cross-shift reports
+System Admin
+Configuration, work center setup
+5. Core Workflows
+5.1 Production Planning & Scheduling Workflow
+Trigger: Customer order received (from Sales module) or MRP run
+Steps:
+MRP/demand data imported from ERP (SAP PP module integration)
+Planner reviews demand vs. capacity on visual scheduling board (Gantt/kanban)
+Production plan created: product, quantity, line, start/end date
+Material availability check (MRP check) — flags shortages
+Capacity check against work center calendars and shift patterns
+Plan reviewed and approved by Production Manager
+Approved plan frozen and published to shop floor (work order creation triggered)
+Changes to plan trigger re-scheduling alert and re-approval
+Fields: Plan ID, Production Date, Part Number, VIN Range, Line Assignment, Planned Qty, Material Availability Status, Capacity Utilization %, Plan Status
+5.2 Work Order (WO) Management Workflow
+Trigger: Approved production plan
+Steps:
+Work orders auto-generated from production plan
+WO details: operations, work centers, standard time (takt), material requirements, routing
+WO released to shop floor by Production Manager
+Line Leader confirms WO receipt on shop-floor terminal
+Materials issued to production line (linked to warehouse module)
+Operations executed sequentially as per routing
+Each operation recorded: start time, end time, quantity, operator ID
+WO completion confirmed by Line Leader
+Finished goods quantity posted to inventory (ERP integration)
+WO variance report auto-generated (planned vs. actual time/material)
+Fields: WO Number, Parent Order, Part/VIN, Plant, Line, Operation Number, Work Center, Standard Time, Actual Time, Material Consumed, Produced Qty, Scrap Qty, Status (Created/Released/In Progress/Completed/Closed)
+5.3 Assembly Line Operations & Takt Management
+Trigger: WO Release
+Steps:
+Assembly sequence (job sequence) loaded to line display screens
+Each station displays: takt time, operation steps, work instructions (linked documents), part images
+Operator confirms each operation with digital sign-off (barcode scan or touch)
+Takt time overrun alert triggered if operation exceeds standard by configurable threshold
+Andon cord (digital) raised for any quality/safety/parts shortage issue
+Andon triggers immediate alert to Line Leader and Supervisor
+Issue logged with type (quality defect, part shortage, machine issue, safety)
+Line Leader responds and resolves — resolution logged
+Line balancing efficiency calculated in real-time
+EOS (End of Shift) summary auto-generated with actual vs. planned output
+Fields: Line ID, Station ID, Job Card Number, VIN, Operation, Standard Takt (minutes), Actual Cycle Time, Operator ID, Andon Events, Resolution Time, Shift Output
+5.4 Tooling & Equipment Management Workflow
+Trigger: Tool life counter trigger or manual request
+Steps:
+Tool register maintained (Tool ID, type, location, calibration date, cycle count)
+Tool life counter tracks usage against maximum cycle limit
+Counter approaching limit → alert to Maintenance team for replacement/refurbishment
+Tool replacement request created: tool ID, reason, urgency
+Maintenance acknowledges and schedules replacement
+Replacement completed → tool re-certified and re-issued
+Tool issue to production line documented with ID scan
+Calibration due dates tracked with auto-alerts 30/15/7 days before expiry
+Calibration done → certificate uploaded → system updated
+Fields: Tool ID, Tool Type, Machine/Line, Last Calibration Date, Next Calibration Due, Cycle Count, Max Life, Status (Active/In Maintenance/Retired), Calibration Certificate Link
+5.5 Shift Handover Workflow
+Trigger: End of shift (scheduled or manual)
+Steps:
+Outgoing Shift Supervisor fills Shift Handover Report:
+Actual production vs. planned
+Quality issues encountered and status
+Open Andon events and resolution status
+Machine/equipment issues and downtime
+Safety incidents
+Pending material shortages
+Carry-forward items for next shift
+Report reviewed by incoming Shift Supervisor
+Incoming supervisor acknowledges (digital sign-off)
+Unresolved items automatically carried to new shift task list
+Production Manager notified of any critical carry-forward items
+Shift summary archived and accessible for reporting
+Fields: Shift ID, Date, Outgoing Supervisor, Incoming Supervisor, Planned Output, Actual Output, Scrap Count, Downtime (minutes), Safety Events (Y/N), Open Issues Count, Sign-off Timestamp
+5.6 Scrap & Rework Workflow
+Trigger: Defect identified at any production stage
+Steps:
+Operator/Inspector raises defect record (part, operation, defect type, quantity)
+Defect categorized: Scrap (non-recoverable) or Rework (recoverable)
+For Rework: rework instructions assigned to rework station, operator, timeline
+Rework executed → re-inspection performed
+Passed re-inspection → part returned to production flow
+Failed re-inspection → escalated to Quality Engineer for disposition
+Quality Engineer decides: further rework / scrap / use-as-is (UAI — requires approval chain)
+UAI requires sign-off: Quality Engineer → Quality Manager → Plant Manager
+Scrapped parts issued destruction certificate
+Scrap cost posted to production WO (linked to Finance)
+Pareto analysis of defect types auto-generated for each shift/day
+Fields: Defect ID, WO Number, Part Number, VIN (if applicable), Station, Defect Type (from master list), Qty, Disposition (Scrap/Rework/UAI), Rework Completion Status, Final Result, Cost Impact
+5.7 Production Quality Gate Workflow
+Trigger: WO completion per station or end-of-line (EOL)
+Steps:
+Quality inspection plan auto-loaded based on control plan (linked to PPAP)
+Inspector performs checks as per inspection plan
+Each check recorded: measurement, acceptance range, result (OK/NOK)
+Failed checks trigger hold on production batch
+Hold notification to Production Manager and Quality Manager
+Disposition decision: containment → root cause → corrective action
+Containment actions logged with 24-hour completion target
+Root cause analysis (5-Why / Ishikawa) documented in system
+Corrective action assigned with owner and due date
+Corrective action verified by Quality Engineer → closed
+Fields: Inspection ID, Control Plan Reference, Part/VIN, Station, Characteristic, Measurement Value, USL/LSL, Result, Inspector ID, Disposition, RCA Method, CA Owner, CA Due Date, CA Status
+5.8 Machine Breakdown / Maintenance Request Workflow
+Trigger: Machine breakdown or operator-raised Andon (machine type)
+Steps:
+Breakdown notification raised (machine ID, breakdown description, severity)
+Maintenance supervisor notified immediately (push notification)
+Maintenance ticket created and assigned to technician
+Technician acknowledges within SLA time (configurable — default 10 min for critical)
+Diagnosis form filled (failure mode, suspected cause)
+Spare parts request raised (linked to Warehouse module)
+Repair executed → repair activity log filled (time, parts used, actions taken)
+Machine re-start requires sign-off: Maintenance Lead + Production Supervisor
+Trial run performed and recorded
+Breakdown closed with root cause and prevention action documented
+MTTR (Mean Time To Repair) and MTBF (Mean Time Between Failures) calculated
+Fields: Ticket ID, Machine ID, Machine Name, Line, Breakdown Time, Severity (P1-P4), Assigned Technician, Acknowledgment Time, Diagnosis, Spare Parts Used, Repair Time (minutes), Restart Sign-off, MTTR, Prevention Action
+5.9 End-of-Line (EOL) Testing Workflow
+Trigger: Vehicle/product assembly completion
+Steps:
+Vehicle VIN scanned at EOL station
+EOL test sequence auto-loaded (based on model/variant)
+Tests executed: engine/motor test, brakes, lights, dimensions, electronics, water test
+Each test result logged (pass/fail with measured values)
+Overall EOL result: PASS / FAIL / CONDITIONAL PASS
+Failed vehicles moved to rework bay with detailed failure report
+After rework, vehicle re-runs failed EOL tests only (skip passed tests)
+Final PASS → Vehicle released to PDI (Pre-Delivery Inspection) area
+EOL test certificate generated and linked to VIN
+EOL data analytics: pass rate, failure trend, top failure modes
+Fields: VIN, Model, Variant, EOL Run Number, Test Item, Expected Value, Measured Value, Result, Retest Flag, Overall Result, EOL Certificate Number, Release Timestamp
+6. Non-Functional Requirements
+Category
+Requirement
+Performance
+Real-time data refresh < 3 seconds on production dashboards
+Scalability
+Support 10+ plant locations, 1000+ concurrent users
+Offline Mode
+Shop floor terminals must work offline with sync on reconnect
+Hardware
+Compatible with industrial touchscreens, barcode scanners, IoT gateways
+Integration
+REST API to SAP PP/MM, IoT sensors (MQTT protocol), MES systems
+Availability
+99.99% uptime for production hours (24x7 manufacturing)
+Security
+RBAC + plant-level data isolation; shop floor PCs on secure VLAN
+Audit Trail
+Full production traceability — raw material to finished VIN
+7. KPIs Tracked
+OEE (Overall Equipment Effectiveness) = Availability × Performance × Quality
+First Pass Yield (FPY) per line/station
+Scrap rate (% of production)
+Schedule Adherence (actual vs. planned output)
+Machine MTTR and MTBF
+Andon response time
+EOL first-pass rate

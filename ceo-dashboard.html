@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE Executive | CEO Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+        @media (max-width: 860px) { .cursor-glow { display: none; } }
+        :root {
+            --bg-dark: #040408;
+            --bg-darker: #000000;
+            --primary: #ffd700;
+            --secondary: #ff8c00;
+            --text-main: #ffffff;
+            --text-muted: #8892b0;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(10, 10, 15, 0.6);
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background */
+        .glow-orb {
+            position: absolute;
+            width: 700px; height: 700px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+            top: -10%; left: -10%;
+            background: radial-gradient(circle, var(--primary), var(--secondary));
+        }
+
+        /* Navbar */
+        .navbar {
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 800;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #000;
+        }
+
+        /* Dashboard Layout Grid */
+        .container {
+            max-width: 1250px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2.5rem;
+            z-index: 1;
+        }
+
+        .header-section {
+            margin-bottom: 2rem;
+        }
+
+        .badge {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            color: var(--primary);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .header-section h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            line-height: 1.15;
+        }
+
+        .header-section p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+        }
+
+        /* Process Grid */
+        .process-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .process-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.8rem;
+            backdrop-filter: blur(12px);
+            transition: var(--transition);
+        }
+
+        .process-card:hover {
+            border-color: rgba(255, 215, 0, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 215, 0, 0.1);
+        }
+
+        .process-card h4 {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+            font-weight: 700;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .status-completed {
+            background: rgba(0, 255, 102, 0.15);
+            color: #00ff66;
+            border: 1px solid rgba(0, 255, 102, 0.3);
+        }
+
+        .status-ongoing {
+            background: rgba(0, 240, 255, 0.15);
+            color: #00f0ff;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+        }
+
+        .status-stopped {
+            background: rgba(255, 78, 78, 0.15);
+            color: #ff4e4e;
+            border: 1px solid rgba(255, 78, 78, 0.3);
+        }
+
+        .process-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        
+        .process-details {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-main);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: var(--bg-darker);
+            z-index: 10;
+        }
+
+        @media (max-width: 968px) {
+            .process-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .header-section h1 { font-size: 2.2rem; }
+            .nav-links { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb"></div>
+
+    <nav class="navbar">
+        <a href="portal.html" class="logo">
+            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#FFD700"/>
+                        <stop offset="1" stop-color="#FF8C00"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE EXECUTIVE</span>
+        </a>
+        <div class="nav-links">
+            <a href="ceo-dashboard.html" class="active">Process Dashboard</a>
+            <a href="ceo-staff-management.html">Staff Management</a>
+            <a href="ceo-eom.html">Employee of the Month</a>
+        </div>
+        <a href="portal.html" class="back-link">
+            &larr; Back to Portal
+        </a>
+    </nav>
+
+    <!-- Supabase Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+
+    <main class="container">
+        <div class="header-section" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem;">
+            <div>
+                <span class="badge">Executive Dashboard</span>
+                <h1>Enterprise Process Overview</h1>
+                <p>Monitor all active, completed, and blocked processes across Engineering (AutoDev), Production (AutoMFG), and Supply Chain (AutoSCM).</p>
+            </div>
+            <button id="btn-refresh" style="background: rgba(255, 215, 0, 0.1); border: 1px solid var(--primary); color: var(--primary); padding: 0.7rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: var(--transition);">
+                🔄 Sync Live Data
+            </button>
+        </div>
+
+        <div class="filter-bar" style="display: flex; gap: 1rem; margin-top: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+            <button class="btn-filter active" data-dept="all" style="background: rgba(255, 215, 0, 0.15); border: 1px solid var(--primary); color: var(--primary); padding: 0.5rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition);">All Departments</button>
+            <button class="btn-filter" data-dept="autodev" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.5rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition);">Engineering & Design</button>
+            <button class="btn-filter" data-dept="automfg" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.5rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition);">Production & Assembly</button>
+            <button class="btn-filter" data-dept="procurement" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.5rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: var(--transition);">Procurement & Logistics</button>
+        </div>
+
+        <div class="process-grid">
+            <!-- Dynamically populated -->
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 VIBE Automotives. All rights reserved. Executive Board Confidential.</p>
+    </footer>
+
+    <script>
+        let allProcesses = [];
+
+        // Restrict access to CEO only
+        document.addEventListener('DOMContentLoaded', () => {
+            const userSession = sessionStorage.getItem('vibe_user');
+            if (!userSession) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const user = JSON.parse(userSession);
+            if (user.department !== 'EXECUTIVE') {
+                window.location.href = 'portal.html';
+                return;
+            }
+
+            // Load dynamic processes
+            loadProcesses();
+
+            // Setup Refresh Button
+            document.getElementById('btn-refresh').addEventListener('click', () => {
+                loadProcesses();
+            });
+
+            // Setup filters
+            document.querySelectorAll('.btn-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.btn-filter').forEach(b => {
+                        b.style.background = 'rgba(255, 255, 255, 0.05)';
+                        b.style.borderColor = 'var(--glass-border)';
+                        b.style.color = 'var(--text-main)';
+                    });
+                    btn.style.background = 'rgba(255, 215, 0, 0.15)';
+                    btn.style.borderColor = 'var(--primary)';
+                    btn.style.color = 'var(--primary)';
+                    
+                    renderProcesses(btn.getAttribute('data-dept'));
+                });
+            });
+        });
+
+        async function loadProcesses() {
+            const grid = document.querySelector('.process-grid');
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 5rem; color: var(--primary);"><h3>Syncing real-time enterprise logs...</h3></div>';
+            
+            try {
+                if (window.supabaseInit) {
+                    await window.supabaseInit;
+                }
+                const client = window.supabaseClient;
+                if (!client) throw new Error("Supabase client not initialized.");
+
+                // 1. Fetch AutoDev (R&D) Programs
+                let devPrograms = [];
+                try {
+                    const { data, error } = await client.from('programs').select('*').limit(10);
+                    if (!error && data) {
+                        devPrograms = data.map(p => ({
+                            title: `${p.program_name} CAD Freeze`,
+                            department: 'AutoDev / R&D',
+                            deptKey: 'autodev',
+                            status: p.status === 'Approved' || p.status === 'Active' ? 'Completed' : (p.status === 'Draft' ? 'Ongoing' : 'Stopped'),
+                            description: `APQP Gate process active. Project Code: ${p.program_code}. Target Launch: ${p.target_launch_date || 'Q4 2026'}.`,
+                            timestamp: p.created_at || new Date().toISOString(),
+                            owner: p.assigned_lead_engineer || 'Sarah Chen'
+                        }));
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch programs:", e);
+                }
+
+                // 2. Fetch AutoMFG (Production) Work Orders
+                let mfgOrders = [];
+                try {
+                    const { data, error } = await client.from('work_orders').select('*').limit(10);
+                    if (!error && data) {
+                        mfgOrders = data.map(w => ({
+                            title: `Assembly Order: ${w.wo_number}`,
+                            department: 'AutoMFG / Production',
+                            deptKey: 'automfg',
+                            status: w.status === 'completed' ? 'Completed' : (w.status === 'in_progress' ? 'Ongoing' : 'Stopped / Maintenance'),
+                            description: `Shop floor assembly execution for part ${w.part_number}. Volume: ${w.actual_qty || 0} produced / ${w.planned_qty || 0} planned. Scrap quantity logged: ${w.scrap_qty || 0}.`,
+                            timestamp: w.created_at || new Date().toISOString(),
+                            owner: 'Plant Manager'
+                        }));
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch work orders:", e);
+                }
+
+                // 3. Fetch AutoSCM (Procurement) Purchase Requisitions
+                let scmPRs = [];
+                try {
+                    const { data, error } = await client.from('purchase_requisitions').select('*').limit(10);
+                    if (!error && data) {
+                        scmPRs = data.map(pr => ({
+                            title: `Material PO: ${pr.material_name}`,
+                            department: 'AutoSCM / Procurement',
+                            deptKey: 'procurement',
+                            status: pr.status === 'Approved' ? 'Completed' : (pr.status === 'Draft' || pr.status === 'Pending' ? 'Ongoing' : 'Stopped / Rejected'),
+                            description: `Supplier buy order for ${pr.quantity} units. Estimated Budget: $${parseFloat(pr.estimated_cost || 0).toLocaleString()}. Department routing: ${pr.department}.`,
+                            timestamp: pr.created_at || new Date().toISOString(),
+                            owner: 'Logistics Head'
+                        }));
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch purchase requisitions:", e);
+                }
+
+                // Merge and Sort by timestamp
+                allProcesses = [...devPrograms, ...mfgOrders, ...scmPRs];
+                allProcesses.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Fallback to mock data if empty
+                if (allProcesses.length === 0) {
+                    allProcesses = getMockProcesses();
+                }
+
+                // Get current active filter
+                const activeFilterBtn = document.querySelector('.btn-filter[style*="rgba(255, 215, 0, 0.15)"]') || document.querySelector('.btn-filter.active');
+                const filter = activeFilterBtn ? activeFilterBtn.getAttribute('data-dept') : 'all';
+                renderProcesses(filter);
+
+            } catch (err) {
+                console.error("Database connection error, falling back to mockups:", err);
+                allProcesses = getMockProcesses();
+                renderProcesses('all');
+            }
+        }
+
+        function renderProcesses(deptFilter) {
+            const grid = document.querySelector('.process-grid');
+            grid.innerHTML = '';
+
+            const filtered = deptFilter === 'all' 
+                ? allProcesses 
+                : allProcesses.filter(p => p.deptKey === deptFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 5rem; color: var(--text-muted);"><h3>No active processes found matching this filter.</h3></div>';
+                return;
+            }
+
+            filtered.forEach(p => {
+                let statusClass = 'status-ongoing';
+                const statusLower = p.status.toLowerCase();
+                if (statusLower.includes('complete') || statusLower.includes('approve') || statusLower.includes('pass') || statusLower.includes('active')) {
+                    statusClass = 'status-completed';
+                } else if (statusLower.includes('stop') || statusLower.includes('reject') || statusLower.includes('fail') || statusLower.includes('maintenance')) {
+                    statusClass = 'status-stopped';
+                }
+
+                const dateStr = new Date(p.timestamp).toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+
+                const card = document.createElement('div');
+                card.className = 'process-card';
+                card.innerHTML = `
+                    <h4>${p.title}</h4>
+                    <div class="status-badge ${statusClass}">${p.status}</div>
+                    <p>${p.description}</p>
+                    <div class="process-details">
+                        <strong>Department:</strong> ${p.department}<br>
+                        <strong>Timestamp:</strong> ${dateStr}<br>
+                        <strong>Owner:</strong> ${p.owner}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function getMockProcesses() {
+            return [
+                {
+                    title: "Model X CAD Design Freeze",
+                    department: "AutoDev / R&D",
+                    deptKey: "autodev",
+                    status: "Completed",
+                    description: "Engineering release for Model X structural body-in-white CAD has been successfully frozen and approved by the Chief Engineer.",
+                    timestamp: new Date(Date.now() - 4 * 3600000).toISOString(),
+                    owner: "Sarah Chen"
+                },
+                {
+                    title: "Chassis Welding Line B",
+                    department: "AutoMFG / Production",
+                    deptKey: "automfg",
+                    status: "Ongoing",
+                    description: "Automated welding line is currently running at 94% OEE. Approaching scheduled maintenance window for robotic arm joints.",
+                    timestamp: new Date().toISOString(),
+                    owner: "Marcus Johnson"
+                },
+                {
+                    title: "Lithium-Ion Battery Procurement",
+                    department: "AutoSCM / Procurement",
+                    deptKey: "procurement",
+                    status: "Stopped / Rejected",
+                    description: "Supplier PO-84931 rejected due to failing quality inspection (cell degradation over tolerance). Awaiting new batch.",
+                    timestamp: new Date(Date.now() - 10 * 3600000).toISOString(),
+                    owner: "Liam Kinsley"
+                },
+                {
+                    title: "DVP&R Thermal Testing",
+                    department: "AutoDev / R&D",
+                    deptKey: "autodev",
+                    status: "Ongoing",
+                    description: "Extreme climate testing for the new battery cooling system in chamber 4. Results show nominal temperatures within specs.",
+                    timestamp: new Date().toISOString(),
+                    owner: "Thermal Team"
+                },
+                {
+                    title: "Q4 Steel Shipment Intake",
+                    department: "AutoSCM / Procurement",
+                    deptKey: "procurement",
+                    status: "Completed",
+                    description: "Goods Receipt Notification (GRN) generated. 500 tons of high-strength steel successfully added to plant inventory.",
+                    timestamp: new Date(Date.now() - 24 * 3600000).toISOString(),
+                    owner: "Warehouse Super"
+                },
+                {
+                    title: "Paint Shop Conveyor Belt",
+                    department: "AutoMFG / Production",
+                    deptKey: "automfg",
+                    status: "Stopped / Maintenance",
+                    description: "Andon cord pulled. Jam in the electrostatic spray booth conveyor. Maintenance team deployed and assessing issue.",
+                    timestamp: new Date(Date.now() - 2 * 3600000).toISOString(),
+                    owner: "Maintenance Tech"
+                }
+            ];
+        }
+    </script>
+    <div class="cursor-glow" id="glow"></div>
+    <script>
+        const glow = document.getElementById('glow');
+        if (glow) window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+    </script>
+</body>
+</html>

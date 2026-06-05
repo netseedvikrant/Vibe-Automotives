@@ -1,0 +1,97 @@
+.validation-dashboard {
+  padding: 24px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.val-header {
+  margin-bottom: 24px;
+}
+
+.status-badge-val {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  display: inline-block;
+  margin-bottom: 12px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.val-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.val-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.val-tab-content {
+  flex: 1;
+  padding: 24px;
+  border-radius: 12px;
+  overflow-y: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.data-table th, .data-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pill.scheduled { background: rgba(255,255,255,0.1); color: white; }
+.status-pill.in-progress { background: rgba(0, 242, 255, 0.1); color: var(--accent); }
+.status-pill.passed { background: rgba(0, 255, 157, 0.1); color: var(--success); }
+.status-pill.failed { background: rgba(255, 51, 102, 0.1); color: var(--error); }
+
+.success-btn {
+  background: rgba(0, 255, 157, 0.1);
+  border: 1px solid var(--success);
+  color: var(--success);
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.success-btn:hover { background: var(--success); color: #000; }
+
+.danger-btn {
+  background: rgba(255, 51, 102, 0.1);
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.danger-btn:hover { background: var(--error); color: white; }

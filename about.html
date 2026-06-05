@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About VIBE – From Tractor Roots to Hyper‑Charging Supercars</title>
+    <meta name="description"
+        content="Explore VIBE's remarkable journey from a 1980s tractor shop to today's cutting‑edge electric mobility platform.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-0: #050507;
+            --bg-1: #0a0a12;
+            --ink: #f4f4f6;
+            --muted: #8a8a99;
+            --line: rgba(255, 255, 255, 0.08);
+            --cyan: #00F0FF;
+            --violet: #7C3AED;
+            --lime: #C6FF3D;
+            --glass: rgba(255, 255, 255, 0.04);
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-0);
+            color: var(--ink);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        /* ---------- AMBIENT FX ---------- */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+        }
+
+        .aurora {
+            position: fixed;
+            inset: -20%;
+            z-index: -3;
+            pointer-events: none;
+            background:
+                radial-gradient(40% 40% at 20% 30%, rgba(0, 240, 255, 0.18), transparent 60%),
+                radial-gradient(35% 35% at 80% 20%, rgba(124, 58, 237, 0.22), transparent 60%),
+                radial-gradient(40% 40% at 60% 80%, rgba(198, 255, 61, 0.10), transparent 60%);
+            filter: blur(40px);
+            animation: drift 22s var(--ease) infinite alternate;
+        }
+
+        @keyframes drift {
+            0% {
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate3d(-3%, 2%, 0) scale(1.1);
+            }
+        }
+
+        .noise {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: .06;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/></svg>");
+        }
+
+        .cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 480px;
+            height: 480px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.10), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s var(--ease);
+            mix-blend-mode: screen;
+        }
+
+        /* ---------- NAV ---------- */
+        nav.bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.1rem 2rem;
+            background: rgba(5, 5, 7, 0.55);
+            backdrop-filter: blur(20px) saturate(140%);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 3px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 14px var(--cyan), 0 0 30px var(--cyan);
+            animation: pulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            50% {
+                opacity: 0.45;
+                transform: scale(0.85);
+            }
+        }
+
+        .back-link {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-decoration: none;
+            letter-spacing: 1px;
+            padding: 0.55rem 1rem;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            transition: all 0.3s var(--ease);
+        }
+
+        .back-link:hover {
+            color: var(--ink);
+            border-color: var(--cyan);
+            background: rgba(0, 240, 255, 0.06);
+        }
+
+        /* ---------- CONTAINER ---------- */
+        .wrap {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ---------- HERO ---------- */
+        .hero {
+            padding: 11rem 0 6rem;
+            position: relative;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--muted);
+            padding: 0.45rem 0.9rem;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+        }
+
+        .eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--lime);
+            box-shadow: 0 0 10px var(--lime);
+        }
+
+        h1 {
+            font-family: 'Instrument Serif', serif;
+            font-weight: 400;
+            font-size: clamp(3.5rem, 9vw, 8rem);
+            line-height: 0.95;
+            letter-spacing: -0.02em;
+            margin: 1.5rem 0 1.5rem;
+        }
+
+        h1 .grad {
+            background: linear-gradient(110deg, var(--cyan) 0%, var(--violet) 50%, var(--lime) 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-style: italic;
+            animation: shine 6s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+            50% {
+                background-position: 100% 0;
+            }
+        }
+
+        .lead {
+            max-width: 640px;
+            font-size: 1.15rem;
+            line-height: 1.6;
+            color: var(--muted);
+        }
+
+        .lead strong {
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        .hero-meta {
+            margin-top: 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1px;
+            background: var(--line);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .meta-cell {
+            background: var(--bg-1);
+            padding: 1.5rem;
+        }
+
+        .meta-cell .num {
+            font-family: 'Instrument Serif', serif;
+            font-size: 2.6rem;
+            background: linear-gradient(180deg, var(--ink), var(--muted));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .meta-cell .lbl {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--muted);
+            margin-top: 0.6rem;
+        }
+
+        /* ---------- MARQUEE ---------- */
+        .marquee {
+            margin: 4rem 0;
+            overflow: hidden;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            padding: 1.3rem 0;
+            mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+        }
+
+        .marquee-track {
+            display: flex;
+            gap: 4rem;
+            white-space: nowrap;
+            animation: scroll 35s linear infinite;
+            font-family: 'Instrument Serif', serif;
+            font-size: 2rem;
+            font-style: italic;
+            color: var(--muted);
+        }
+
+        .marquee-track span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .marquee-track span::after {
+            content: '✦';
+            color: var(--cyan);
+            font-style: normal;
+            font-size: 1.2rem;
+        }
+
+        @keyframes scroll {
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ---------- SECTION HEAD ---------- */
+        .sec-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 2rem;
+            margin-bottom: 4rem;
+            flex-wrap: wrap;
+        }
+
+        .sec-head h2 {
+            font-family: 'Instrument Serif', serif;
+            font-weight: 400;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        .sec-head h2 em {
+            color: var(--cyan);
+            font-style: italic;
+        }
+
+        .sec-head .tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            letter-spacing: 1.5px;
+        }
+
+        /* ---------- TIMELINE ---------- */
+        .timeline-section {
+            padding: 4rem 0 8rem;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg,
+                    transparent, var(--cyan) 8%, var(--violet) 50%, var(--lime) 92%, transparent);
+            transform: translateX(-50%);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        .tl-item {
+            position: relative;
+            width: calc(50% - 40px);
+            padding: 0;
+            margin-bottom: 3.5rem;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+        }
+
+        .tl-item.in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .tl-item:nth-child(odd) {
+            left: 0;
+            text-align: right;
+        }
+
+        .tl-item:nth-child(even) {
+            left: calc(50% + 40px);
+            text-align: left;
+        }
+
+        .tl-item::after {
+            content: '';
+            position: absolute;
+            top: 2rem;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--bg-0);
+            border: 2px solid var(--cyan);
+            box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.08), 0 0 20px var(--cyan);
+        }
+
+        .tl-item:nth-child(odd)::after {
+            right: -47px;
+        }
+
+        .tl-item:nth-child(even)::after {
+            left: -47px;
+        }
+
+        .tl-card {
+            position: relative;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 1.8rem;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transition: all 0.5s var(--ease);
+            overflow: hidden;
+        }
+
+        .tl-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--cyan), transparent 40%, var(--violet) 80%);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.5s var(--ease);
+        }
+
+        .tl-card:hover {
+            transform: translateY(-4px);
+            border-color: transparent;
+        }
+
+        .tl-card:hover::before {
+            opacity: 1;
+        }
+
+        .tl-year {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--cyan);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .tl-card h3 {
+            font-family: 'Instrument Serif', serif;
+            font-weight: 400;
+            font-size: 1.7rem;
+            line-height: 1.15;
+            letter-spacing: -0.01em;
+            margin-bottom: 0.7rem;
+            color: var(--ink);
+        }
+
+        .tl-card p {
+            font-size: 0.95rem;
+            line-height: 1.55;
+            color: var(--muted);
+        }
+
+        /* Animated chase dot on the spine */
+        .spine-chase {
+            position: absolute;
+            left: 50%;
+            top: -8px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 18px var(--cyan), 0 0 40px var(--cyan);
+            transform: translateX(-50%);
+            animation: chase 14s linear infinite;
+        }
+
+        @keyframes chase {
+            0% {
+                top: -8px;
+                opacity: 0;
+            }
+
+            8% {
+                opacity: 1;
+            }
+
+            92% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+        /* ---------- FOOTER ---------- */
+        footer {
+            border-top: 1px solid var(--line);
+            padding: 3rem 0;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--muted);
+            letter-spacing: 1.5px;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 860px) {
+
+            .tl-item,
+            .tl-item:nth-child(even),
+            .tl-item:nth-child(odd) {
+                left: 0;
+                width: 100%;
+                text-align: left;
+                padding-left: 50px;
+            }
+
+            .timeline::before {
+                left: 14px;
+            }
+
+            .tl-item::after,
+            .tl-item:nth-child(odd)::after,
+            .tl-item:nth-child(even)::after {
+                left: 7px;
+                right: auto;
+            }
+
+            .spine-chase {
+                left: 14px;
+            }
+
+            .cursor-glow {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="grid-bg"></div>
+    <div class="aurora"></div>
+    <div class="noise"></div>
+    <div class="cursor-glow" id="glow"></div>
+
+    <!-- ====================== NAVBAR ====================== -->
+    <nav class="bar">
+        <a href="index.html" class="logo">
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_about)" />
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505" />
+                <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_about)" />
+                <defs>
+                    <linearGradient id="paint0_linear_about" x1="0" y1="0" x2="100" y2="100"
+                        gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF" />
+                        <stop offset="1" stop-color="#0055FF" />
+                    </linearGradient>
+                    <linearGradient id="paint1_linear_about" x1="40" y1="40" x2="60" y2="60"
+                        gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF" />
+                        <stop offset="1" stop-color="#0055FF" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMOTIVES</span>
+        </a>
+        <a href="index.html" class="back-link">← BACK TO HOME</a>
+    </nav>
+
+    <div class="wrap">
+
+        <!-- ====================== HERO ====================== -->
+        <section class="hero">
+            <span class="eyebrow">Est. 1980 — Chapter 09</span>
+            <h1>Our <span class="grad">Journey</span></h1>
+            <p class="lead">
+                From a modest tractor workshop in the 1980s to a world‑leading electric
+                mobility powerhouse, <strong>VIBE's story is a waterfall of bold moves,
+                    relentless innovation, and a relentless drive for sustainability.</strong>
+            </p>
+
+            <div class="hero-meta">
+                <div class="meta-cell">
+                    <div class="num">46</div>
+                    <div class="lbl">Years of craft</div>
+                </div>
+                <div class="meta-cell">
+                    <div class="num">45k+</div>
+                    <div class="lbl">Charging stations</div>
+                </div>
+                <div class="meta-cell">
+                    <div class="num">520<span style="font-size:1.2rem">mi</span></div>
+                    <div class="lbl">EPA range</div>
+                </div>
+                <div class="meta-cell">
+                    <div class="num">99.9%</div>
+                    <div class="lbl">Renewable uptime</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====================== MARQUEE ====================== -->
+        <div class="marquee">
+            <div class="marquee-track">
+                <span>Tractors</span><span>Harvesters</span><span>Chassis</span><span>Electric Drive</span>
+                <span>Echelon</span><span>Horizon</span><span>Apex</span>
+                <span>Tractors</span><span>Harvesters</span><span>Chassis</span><span>Electric Drive</span>
+                <span>Echelon</span><span>Horizon</span><span>Apex</span>
+            </div>
+        </div>
+
+        <!-- ====================== TIMELINE ====================== -->
+        <section class="timeline-section">
+            <div class="sec-head">
+                <h2>Four decades, <em>one trajectory.</em></h2>
+                <div class="tag">// SCROLL TO TRAVERSE</div>
+            </div>
+
+            <div class="timeline">
+                <div class="spine-chase"></div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">1980</span>
+                        <h3>GreenField Tractors Co.</h3>
+                        <p>Founded by a family of farm‑mechanics in the Midwest, the company built rugged
+                            tractors for local growers. The ethos of durability and hands‑on engineering
+                            was forged here.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">1992</span>
+                        <h3>Diversification</h3>
+                        <p>Expanded the product line to include combine harvesters and irrigation
+                            systems. Modern CNC tooling introduced, laying the groundwork for precise
+                            manufacturing practices.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2005</span>
+                        <h3>Automotive Components</h3>
+                        <p>Entered the automotive supply chain, producing lightweight chassis
+                            components for premium manufacturers. First exposure to electric‑driven
+                            powertrain parts.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2012</span>
+                        <h3>First Electric Prototype</h3>
+                        <p>Built an all‑electric utility vehicle for a regional fleet, proving that
+                            the company could blend its mechanical heritage with emerging EV tech.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2016</span>
+                        <h3>Antigravity Acquisition</h3>
+                        <p>Acquired the Antigravity software platform, adding AI‑driven
+                            production planning, predictive maintenance, and autonomous driving
+                            capabilities to the portfolio.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2020</span>
+                        <h3>VIBE Automotives Re‑Brand</h3>
+                        <p>The company re‑launched as VIBE Automotives, shifting focus to
+                            premium electric vehicles and a fully integrated digital ecosystem.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2022</span>
+                        <h3>Launch of VIBE Echelon</h3>
+                        <p>Our flagship autonomous luxury sedan debuted, featuring the
+                            Antigravity OS, 520 mi EPA range, and a glass‑morphism interior.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2024</span>
+                        <h3>Hyper‑Charging Network</h3>
+                        <p>Rolled out over 45 k hyper‑charging stations worldwide, delivering
+                            up to 350 kW fast‑charge and achieving 99.9 % renewable uptime.</p>
+                    </div>
+                </div>
+
+                <div class="tl-item">
+                    <div class="tl-card">
+                        <span class="tl-year">2026 — Today</span>
+                        <h3>The Road Ahead</h3>
+                        <p>VIBE leads the market with three distinct vehicle families
+                            (Echelon, Horizon, Apex), a global supply‑chain hub, and an
+                            AI‑first approach to mobility. Our mission: redefine transport,
+                            zero emissions, and limitless performance.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>© VIBE AUTOMOTIVES — DRIVEN BY TOMORROW</footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+    <script src="script.js?v=1.2"></script>
+
+    <script>
+        // Cursor glow
+        const glow = document.getElementById('glow');
+        window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+
+        // Scroll reveal for timeline items
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+        }, { threshold: 0.15 });
+        document.querySelectorAll('.tl-item').forEach(el => io.observe(el));
+    </script>
+</body>
+
+</html>

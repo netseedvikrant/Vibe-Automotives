@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy | VIBE Automotives</title>
+    <meta name="description" content="VIBE Automotives' Privacy Policy regarding data protection, user rights, and manufacturing compliance guidelines.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.2">
+    <style>
+        body {
+            position: relative;
+        }
+
+        /* Ambient Background Orbs */
+        .ambient-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -2;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+        .orb-top-left {
+            width: 600px; height: 600px;
+            background: var(--primary);
+            top: -10%; left: -10%;
+        }
+        .orb-bottom-right {
+            width: 500px; height: 500px;
+            background: var(--secondary);
+            bottom: -10%; right: -10%;
+        }
+
+        .policy-hero {
+            padding: 160px 0 60px;
+            text-align: center;
+            position: relative;
+        }
+
+        .policy-hero h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .policy-hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .policy-content {
+            padding: 40px 0 100px;
+        }
+
+        .policy-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 4rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .policy-section {
+            margin-bottom: 3.5rem;
+        }
+
+        .policy-section h2 {
+            font-size: 1.8rem;
+            color: #fff;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            border-left: 3px solid var(--primary);
+            padding-left: 1rem;
+        }
+
+        .policy-section p {
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+        }
+
+        .policy-section ul {
+            list-style: none;
+            margin-left: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .policy-section ul li {
+            position: relative;
+            color: var(--text-muted);
+            line-height: 1.8;
+            margin-bottom: 0.6rem;
+            font-size: 1.05rem;
+            padding-left: 1.5rem;
+        }
+
+        .policy-section ul li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 900;
+        }
+
+        /* Cursor Glow */
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: -1;
+            background: radial-gradient(circle, rgba(0,240,255,0.08), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+
+        @media (max-width: 768px) {
+            .policy-card {
+                padding: 2.5rem 1.5rem;
+            }
+            .policy-hero h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Glow Background Elements -->
+    <div class="ambient-glow orb-top-left"></div>
+    <div class="ambient-glow orb-bottom-right"></div>
+    <div class="cursor-glow" id="glow"></div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar glass-effect scrolled">
+        <div class="logo">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMOTIVES</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="index.html#showcase">Models</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#gallery">Gallery</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Header -->
+    <header class="policy-hero">
+        <div class="container">
+            <h1 class="gradient-text">PRIVACY POLICY</h1>
+            <p>Effective Date: June 02, 2026 | Last Updated: June 02, 2026</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="policy-content container">
+        <article class="policy-card">
+            
+            <div class="policy-section">
+                <h2>1. Data Collection & Sources</h2>
+                <p>VIBE Automotives is committed to safeguarding your personal information. We collect data to deliver customized concierge, test drive scheduling, and administrative portal interactions. The specific information we collect includes:</p>
+                <ul>
+                    <li><strong>Personal Identifiers:</strong> Full Name, Business Email Address, Phone Number, Job Title, and Company Name.</li>
+                    <li><strong>Submission Specifics:</strong> Vehicle preferences, requested scheduling dates, and uploaded professional materials (such as job application resumes).</li>
+                </ul>
+                <p>We collect this data directly from you via manual input forms on our portal and web presence. Additionally, we may collect technical system metadata through automated cookies or session tracking pixels to optimize portal responsiveness.</p>
+            </div>
+
+            <div class="policy-section">
+                <h2>2. Purpose of Processing</h2>
+                <p>As an advanced automotive engineering and manufacturing enterprise, we process your personal data under the following legitimate business frameworks:</p>
+                <ul>
+                    <li><strong>Customer Engagement:</strong> Processing inquiries, scheduling corporate concierge services, and managing test drive reservations.</li>
+                    <li><strong>Supply Chain Logistics:</strong> Managing parts distribution logistics, vehicle assemblies auditing, and vendor communications.</li>
+                    <li><strong>Safety & Recalls:</strong> Sending required regulatory safety bulletins or vehicle compliance updates associated with vehicle manufacturing and ownership.</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2>3. Data Sharing & Third Parties</h2>
+                <p>We do not sell, trade, or distribute your personal details to outside market brokers. We share data only with verified cloud providers, corporate systems, or legal bodies to fulfill essential manufacturing and portal services:</p>
+                <ul>
+                    <li><strong>Cloud Hosting Infrastructure:</strong> Subprocessors including AWS (Amazon Web Services) and Microsoft Azure for database operations.</li>
+                    <li><strong>Customer Relationship Management:</strong> Secure cloud-based CRMs including Salesforce and HubSpot.</li>
+                    <li><strong>Legal and Regulatory Audits:</strong> Verified judicial or governmental institutions where legally mandated to satisfy safety, regulatory, or tax reporting requirements.</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2>4. Data Retention</h2>
+                <p>We operate under strict data minimization guidelines. We retain your contact information and query logs for a period of <strong>5 years</strong> after our last documented interaction, unless a longer retention window is mandated by international automotive safety laws, environmental audits, or manufacturing compliance protocols.</p>
+            </div>
+
+            <div class="policy-section">
+                <h2>5. User Rights ("Right to be Forgotten")</h2>
+                <p>You maintain full control over your personal footprint. Under global privacy protections, you hold the following absolute rights:</p>
+                <ul>
+                    <li><strong>The Right of Access:</strong> You can request a summary or digital copy of all personal information we store about you.</li>
+                    <li><strong>The Right to Erasure:</strong> You can request that we delete all your collected personal information ("Right to be Forgotten").</li>
+                    <li><strong>The Right to Withdraw Consent:</strong> You can revoke your consent at any time for active communications or data processing pipelines.</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2>6. Security Measures</h2>
+                <p>VIBE Automotives implements robust, enterprise-grade safety controls to protect database registers against unauthorized penetration or leakage. These include standard Secure Socket Layers (SSL/TLS) traffic encryption, complete database encryption at rest, multi-factor authentication (MFA), and strictly audited role-based access control (RBAC) protocols.</p>
+            </div>
+
+            <div class="policy-section">
+                <h2>7. Contact and Privacy Requests</h2>
+                <p>For any questions, concerns, or to submit requests for access or erasure under your user rights, please contact our dedicated Data Protection Officer directly at:</p>
+                <p style="font-weight: 700; color: var(--primary);">Email: <a href="mailto:privacy@vibeauto.com" style="color: var(--primary); text-decoration: none;">privacy@vibeauto.com</a></p>
+            </div>
+
+        </article>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <div class="logo">
+                    <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_footer)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_footer)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_footer" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_footer" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE</span>
+                </div>
+                <p>Pioneering the future of mobility through integrated enterprise intelligence.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Vehicles</h4>
+                <ul>
+                    <li><a href="index.html#showcase">VIBE Echelon</a></li>
+                    <li><a href="index.html#showcase">VIBE Horizon</a></li>
+                    <li><a href="index.html#showcase">VIBE Apex</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="index.html#about">About VIBE</a></li>
+                    <li><a href="careers.html">Careers</a></li>
+                    <li><a href="sustainability.html">Sustainability</a></li>
+                    <li><a href="news.html">News & Press</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Experience</h4>
+                <ul>
+                    <li><a href="#" class="open-test-drive-btn">Book a Test Drive</a></li>
+                    <li><a href="index.html#gallery">Find a Gallery</a></li>
+                    <li><a href="index.html#openLoginBtn">Corporate Login</a></li>
+                    <li><a href="#" class="open-support-btn">Support & Help</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 VIBE Automotives. All rights reserved.</p>
+            <div class="legal">
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Cursor Glow Positioning
+        const glow = document.getElementById('glow');
+        if (glow) {
+            window.addEventListener('mousemove', e => {
+                glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+            });
+        }
+    </script>
+    <script src="test-drive.js"></script>
+</body>
+</html>

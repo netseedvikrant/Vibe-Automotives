@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE Automotives | Unified Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #030305;
+            --bg-darker: #000000;
+            --primary: #00f0ff;
+            --secondary: #0055ff;
+            --text-main: #ffffff;
+            --text-muted: #8892b0;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(10, 10, 15, 0.4);
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        /* Ambient Background Glows */
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.15;
+        }
+        .orb-1 {
+            width: 500px; height: 500px;
+            background: var(--primary);
+            top: -10%; left: -10%;
+        }
+        .orb-2 {
+            width: 400px; height: 400px;
+            background: var(--secondary);
+            bottom: -5%; right: -5%;
+        }
+
+        /* Glassmorphic Navbar */
+        .navbar {
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            background: rgba(5, 5, 8, 0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-weight: 800;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+        }
+
+        .user-profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-info h5 {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            font-size: 0.75rem;
+            color: var(--primary);
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .btn-signout {
+            background: transparent;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff4a4a;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-signout:hover {
+            background: #ff4a4a;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 74, 74, 0.3);
+        }
+
+        /* Main Container */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            z-index: 1;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .welcome-section h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 0.8rem;
+        }
+
+        .welcome-section h1 span {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-section p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Department Selection Grid */
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .portal-card {
+            background: rgba(15, 15, 20, 0.55);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .portal-card:hover:not(.disabled) {
+            transform: translateY(-10px);
+            border-color: rgba(0, 240, 255, 0.35);
+            box-shadow: 0 20px 40px rgba(0, 240, 255, 0.1);
+        }
+
+        .portal-card:hover:not(.disabled)::before {
+            opacity: 1;
+        }
+
+        .card-icon {
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            display: inline-block;
+        }
+
+        .portal-card h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+        }
+
+        .portal-card p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            flex-grow: 1;
+        }
+
+        .btn-launch {
+            display: block;
+            text-align: center;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .portal-card:hover:not(.disabled) .btn-launch {
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 10px 20px rgba(0, 240, 255, 0.2);
+        }
+
+        /* Disabled State styling */
+        .portal-card.disabled {
+            opacity: 0.35;
+            filter: grayscale(90%);
+            pointer-events: none; /* Block clicks completely */
+            border-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .restricted-badge {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255, 78, 78, 0.15);
+            border: 1px solid rgba(255, 78, 78, 0.3);
+            color: #ff5e5e;
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: var(--bg-darker);
+            z-index: 10;
+        }
+
+        @media (max-width: 968px) {
+            .portal-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .welcome-section h1 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <svg width="35" height="35" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE PORTAL</span>
+        </div>
+        <div class="user-profile-badge">
+            <div class="user-info">
+                <h5 id="user-name">Loading...</h5>
+                <p id="user-role">STAFF MEMBER</p>
+            </div>
+            <button class="btn-signout" onclick="signOut()">Sign Out</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="welcome-section">
+            <h1>Welcome back, <span id="welcome-user">Staff Member</span></h1>
+            <p>Select an enterprise workspace to proceed. Your access level is governed by VIBE Automotives Role-Based Access Control matrix.</p>
+        </div>
+
+        <div class="portal-grid">
+            <!-- AutoDev Card -->
+            <div class="portal-card" id="card-autodev">
+                <div>
+                    <span class="card-icon">⚙️</span>
+                    <h3>Engineering & Design</h3>
+                    <p>Access AutoDev to manage concept designs, parts lists (BOM), CAD freeze cycles, Engineering Change Orders (ECOs), and DVP&R test procedures.</p>
+                </div>
+                <button class="btn-launch" onclick="launchApp('autodev')">Launch AutoDev</button>
+            </div>
+
+            <!-- AutoMFG Card -->
+            <div class="portal-card" id="card-automfg">
+                <div>
+                    <span class="card-icon">🏭</span>
+                    <h3>Production & Assembly</h3>
+                    <p>Access AutoMFG to monitor active shop floor work orders, production schedules, shift handovers, Andon calls, scrap logging, and OEE metrics.</p>
+                </div>
+                <button class="btn-launch" onclick="launchApp('automfg')">Launch AutoMFG</button>
+            </div>
+
+            <!-- Procurement/SCM Card -->
+            <div class="portal-card" id="card-procurement">
+                <div>
+                    <span class="card-icon">📦</span>
+                    <h3>Procurement & Logistics</h3>
+                    <p>Access AutoSCM to manage purchase requisitions, RFQ pipelines, supplier onboarding checks, goods receipt notifications (GRN), and inventory audits.</p>
+                </div>
+                <button class="btn-launch" onclick="launchApp('procurement')">Launch Procurement</button>
+            </div>
+
+            <!-- CEO Card -->
+            <div class="portal-card" id="card-ceo" style="display: none; border-color: rgba(255, 215, 0, 0.25);">
+                <div>
+                    <span class="card-icon">👑</span>
+                    <h3>Executive Boardroom</h3>
+                    <p>Access the CEO Executive Dashboard to review cross-departmental operations, direct staff actions, and nominate Employees of the Month.</p>
+                </div>
+                <button class="btn-launch" onclick="launchApp('ceo')" style="border-color: rgba(255, 215, 0, 0.3); color: #ffd700;">Launch CEO Portal</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 VIBE Automotives. All rights reserved. Confidential Enterprise Portal.</p>
+    </footer>
+
+    <!-- Supabase Integration to support Sign Out -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userSession = sessionStorage.getItem('vibe_user');
+            if (!userSession) {
+                window.location.href = 'index.html';
+                return;
+            }
+            const user = JSON.parse(userSession);
+            
+            // Populate details
+            const fullName = user.profile?.full_name || 'Staff Member';
+            const role = user.profile?.role || 'Staff';
+            const email = user.email || '';
+            
+            document.getElementById('user-name').textContent = fullName;
+            document.getElementById('welcome-user').textContent = fullName.split(' ')[0];
+            document.getElementById('user-role').textContent = role.replace(/_/g, ' ').toUpperCase();
+
+            // Detect Department Access (AutoDev / R&D vs AutoSCM / Procurement vs AutoMFG / Production)
+            const department = user.department || 'R&D';
+            
+            const cardAutodev = document.getElementById('card-autodev');
+            const cardAutomfg = document.getElementById('card-automfg');
+            const cardProcurement = document.getElementById('card-procurement');
+
+            if (department === 'EXECUTIVE' || user.profile?.role === 'CEO' || user.email === 'ceo@vibe.com') {
+                // Executive CEO has unrestricted access to all modules
+                console.log("Welcome Executive CEO - all systems operational.");
+                const cardCeo = document.getElementById('card-ceo');
+                if (cardCeo) {
+                    cardCeo.style.display = 'flex';
+                }
+            } else if (department === 'R&D') {
+                // R&D / AutoDev staff has access only to AutoDev
+                disableCard(cardAutomfg, 'Restricted');
+                disableCard(cardProcurement, 'Restricted');
+            } else if (department === 'SCM') {
+                // SCM / AutoSCM / Procurement staff has access only to Procurement
+                disableCard(cardAutodev, 'Restricted');
+                disableCard(cardAutomfg, 'Restricted');
+            } else if (department === 'MFG') {
+                // MFG / AutoMFG staff has access only to AutoMFG
+                disableCard(cardAutodev, 'Restricted');
+                disableCard(cardProcurement, 'Restricted');
+            } else {
+                // Fallback
+                disableCard(cardAutodev, 'Restricted');
+                disableCard(cardAutomfg, 'Restricted');
+                disableCard(cardProcurement, 'Restricted');
+            }
+        });
+
+        function disableCard(cardElement, reason) {
+            if (!cardElement) return;
+            cardElement.classList.add('disabled');
+            
+            // Add a restricted badge
+            const badge = document.createElement('span');
+            badge.className = 'restricted-badge';
+            badge.textContent = reason;
+            cardElement.appendChild(badge);
+            
+            // Disable button
+            const btn = cardElement.querySelector('.btn-launch');
+            if (btn) {
+                btn.textContent = 'Locked';
+                btn.disabled = true;
+            }
+        }
+
+        function signOut() {
+            sessionStorage.removeItem('vibe_user');
+            localStorage.removeItem('automfg-auth');
+            if (window.supabaseClient) {
+                window.supabaseClient.auth.signOut().then(() => {
+                    window.location.href = 'index.html';
+                }).catch(err => {
+                    console.error("Signout error:", err);
+                    window.location.href = 'index.html';
+                });
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        function launchApp(module) {
+            if (module === 'autodev') {
+                window.location.href = 'autodev-landing.html';
+            } else if (module === 'automfg') {
+                window.location.href = 'automfg-landing.html';
+            } else if (module === 'procurement') {
+                window.location.href = 'procurement-landing.html';
+            } else if (module === 'ceo') {
+                window.location.href = 'ceo-dashboard.html';
+            }
+        }
+    </script>
+</body>
+</html>

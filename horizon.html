@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE Horizon | Modern Electric SUV</title>
+    <meta name="description" content="Explore the VIBE Horizon specifications, sales, and manufacturing stats.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #090604;
+            --bg-darker: #040201;
+            --primary: #FFAA00;
+            --primary-glow: rgba(255, 170, 0, 0.4);
+            --accent: #E03E00;
+            --accent-glow: rgba(224, 62, 0, 0.4);
+            --text-light: #fdfaf7;
+            --text-muted: #a8a29e;
+            --glass-bg: rgba(15, 10, 5, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-darker);
+            color: var(--text-light);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Ambient Glow Backgrounds */
+        .glow-orb {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(160px);
+            z-index: -1;
+            opacity: 0.15;
+        }
+        .orb-left {
+            top: -100px;
+            left: -200px;
+            background: var(--primary);
+        }
+        .orb-right {
+            bottom: -200px;
+            right: -200px;
+            background: var(--accent);
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+        }
+
+        /* Navigation */
+        .navbar {
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(4, 2, 1, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: 2px;
+            color: white;
+            text-decoration: none;
+        }
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .back-link:hover {
+            color: var(--primary);
+            text-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem 2rem;
+        }
+
+        /* Hero Showcase Split */
+        .showcase-hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 6rem;
+        }
+        @media (max-width: 968px) {
+            .showcase-hero {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center;
+            }
+        }
+
+        .hero-info h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 30%, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-info .tagline {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .hero-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .hero-visual img {
+            width: 100%;
+            max-width: 550px;
+            filter: drop-shadow(0 15px 30px rgba(255, 170, 0, 0.25));
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Big Specs Bar */
+        .specs-ribbon {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+            padding: 2rem;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .specs-ribbon {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .spec-item .value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.25rem;
+        }
+        .spec-item .label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+        }
+
+        /* Specifications Details & Stats Section */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 2rem;
+        }
+        @media (max-width: 968px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-card {
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .section-card h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        /* Specs Table */
+        .specs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .specs-table tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .specs-table tr:last-child {
+            border-bottom: none;
+        }
+        .specs-table td {
+            padding: 1rem 0;
+            font-size: 0.95rem;
+        }
+        .specs-table td.label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .specs-table td.val {
+            text-align: right;
+            font-weight: 700;
+            color: white;
+        }
+
+        /* SCM & Sales Stats styling */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+        }
+        .stat-card .val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+        .stat-card .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Chart bar representation */
+        .chart-container {
+            margin-top: 1.5rem;
+        }
+        .chart-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+        .bar-group {
+            margin-bottom: 0.75rem;
+        }
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+        .bar-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            border-radius: 4px;
+        }
+
+        /* Call To Action */
+        .cta-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            margin-top: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-section h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        .cta-section p {
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+        }
+        .btn-glow {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #000;
+            padding: 1rem 3rem;
+            font-weight: 700;
+            border-radius: 30px;
+            text-decoration: none;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px var(--primary-glow);
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+        }
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px var(--primary);
+            color: #fff;
+        }
+
+        /* Reservation Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 2000;
+            background: rgba(0, 0, 0, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal.show { opacity: 1; }
+        .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            position: relative;
+            width: 90%;
+            max-width: 600px;
+            transform: translateY(30px);
+            transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content { transform: translateY(0); }
+        .close-modal {
+            position: absolute;
+            top: 1rem; right: 1.25rem;
+            font-size: 1.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .close-modal:hover { color: #fff; }
+        .modal input, .modal textarea {
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .modal input:focus, .modal textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(255,170,0,0.10), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+        @media (max-width: 860px) { .cursor-glow { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="cursor-glow" id="glow"></div>
+    <div class="glow-orb orb-left"></div>
+    <div class="glow-orb orb-right"></div>
+
+    <nav class="navbar">
+        <a href="index.html" class="logo">
+            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_nav)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <defs>
+                    <linearGradient id="paint0_linear_nav" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#FFAA00"/>
+                        <stop offset="1" stop-color="#E03E00"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMOTIVES</span>
+        </a>
+        <a href="index.html" class="back-link">
+            &larr; Back to Showroom
+        </a>
+    </nav>
+
+    <main class="container">
+        <!-- Hero Details Section -->
+        <section class="showcase-hero">
+            <div class="hero-info">
+                <h1>VIBE HORIZON</h1>
+                <p class="tagline">Explore without boundaries. A family-sized adventure utility vehicle featuring dual-motor performance and rugged premium versatility.</p>
+                <a href="#reserve" class="btn-glow">Configure Vehicle</a>
+            </div>
+            <div class="hero-visual">
+                <img src="assets/model_x_showcase_1779115427637.png" alt="VIBE Horizon">
+            </div>
+        </section>
+
+        <!-- Dynamic Specs Ribbon -->
+        <section class="specs-ribbon glass-panel">
+            <div class="spec-item">
+                <div class="value">410 mi</div>
+                <div class="label">Range (EPA)</div>
+            </div>
+            <div class="spec-item">
+                <div class="value">3.5s</div>
+                <div class="label">0-60 mph</div>
+            </div>
+            <div class="spec-item">
+                <div class="value">155 mph</div>
+                <div class="label">Top Speed</div>
+            </div>
+            <div class="spec-item">
+                <div class="value">780 hp</div>
+                <div class="label">Peak Power</div>
+            </div>
+        </section>
+
+        <div class="content-grid">
+            <!-- Left Column: Specs Details -->
+            <div class="left-col">
+                <section class="section-card glass-panel">
+                    <h2>Technical Specifications</h2>
+                    <table class="specs-table">
+                        <tr>
+                            <td class="label">Powertrain Config</td>
+                            <td class="val">Dual-Motor AWD (Permanent Magnet Synchronous)</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Towing Capacity</td>
+                            <td class="val">5,000 lbs (Class IV Integrated Receiver)</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Battery Architecture</td>
+                            <td class="val">800V High-Volume Cobalt-Free Chemistry Platform</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Cargo Capacity</td>
+                            <td class="val">88.5 cu ft (Rear seats flat + under-trunk subfloor)</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Autonomous Capability</td>
+                            <td class="val">Antigravity Autopilot v4.2 (Level 3 Active Safety Assure)</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Ground Clearance</td>
+                            <td class="val">Up to 8.7 inches (Active air suspension raise capability)</td>
+                        </tr>
+                    </table>
+                </section>
+
+                <section class="section-card glass-panel">
+                    <h2>Adventure Ready</h2>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">The VIBE Horizon offers a state-of-the-art camping mode, complete with structural glass panoramas, climate control stabilization, and vehicle-to-load (V2L) standard outlets that output 120V/240V auxiliary power to drive external machinery, tools, or camp systems.</p>
+                    <p style="color: var(--text-muted); font-size: 0.95rem;">Its body layout utilizes high-tensile impact-resistant aluminum alloys combined with sustainable composites designed for low maintenance and lifetime extreme durability.</p>
+                </section>
+            </div>
+
+            <!-- Right Column: SCM Sales Stats -->
+            <div class="right-col">
+                <section class="section-card glass-panel">
+                    <h2>Operational Metrics</h2>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Supply chain metrics and global sales tracking synced from AutoSCM systems.</p>
+                    
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="val">28,150</div>
+                            <div class="desc">Units Sold (YTD)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="val">64,800</div>
+                            <div class="desc">Active Backlog</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="val">140/day</div>
+                            <div class="desc">Daily Output</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="val">88%</div>
+                            <div class="desc">SCM Localization</div>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">Supply Chain Material Integrity</div>
+                        <div class="bar-group">
+                            <div class="bar-label"><span>Battery Cell Sourcing</span><span>91%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 91%;"></div></div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-label"><span>Structural Alloys</span><span>96%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 96%;"></div></div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar-label"><span>Semiconductors</span><span>82%</span></div>
+                            <div class="bar-track"><div class="bar-fill" style="width: 82%;"></div></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Reserve CTA Section -->
+        <section id="reserve" class="cta-section glass-panel">
+    <h2>Experience VIBE Horizon</h2>
+    <p>Secure your slot. Deliveries for new custom configurations are estimated in 6 to 8 weeks. Enterprise fleet volume pricing is available through corporate inquiry.</p>
+    <button id="openReserveBtn" class="btn-glow">Reserve Reservation slot</button>
+</section>
+
+<!-- Reservation Modal -->
+<div id="reserveModal" class="modal" style="display: none;">
+    <div class="modal-content glass-effect" style="max-width: 600px; padding: 2rem;">
+        <span class="close-reserve-modal close-modal" style="font-size:2rem;">&times;</span>
+        <h3 style="margin-bottom:1rem; text-align:center;">Reservation Request</h3>
+        <form id="reserveForm" style="display:flex; flex-direction:column; gap:0.75rem;">
+            <input type="text" name="name" placeholder="Full Name" required style="padding:0.6rem; border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-light);">
+            <input type="email" name="email" placeholder="Email" required style="padding:0.6rem; border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-light);">
+            <input type="tel" name="phone" placeholder="Phone" required style="padding:0.6rem; border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-light);">
+            <textarea name="notes" placeholder="Additional details (optional)" rows="3" style="padding:0.6rem; border:1px solid var(--glass-border); background:var(--glass-bg); color:var(--text-light);"></textarea>
+            <button type="submit" class="btn-glow" style="margin-top:0.5rem;">Submit Request</button>
+        </form>
+        <p id="reserveSuccessMsg" style="display:none; margin-top:1rem; color:var(--primary); text-align:center;">Thank you! Our team will connect soon.</p>
+    </div>
+</div>
+
+<!-- Existing footer -->
+    </main>
+
+    <footer style="padding: 3rem 2rem; border-top: 1px solid var(--glass-border); text-align: center; margin-top: 4rem; font-size: 0.9rem; color: var(--text-muted);">
+        <p>&copy; 2026 VIBE Automotives. All rights reserved. Platform powered by Antigravity.</p>
+    </footer>
+
+    <script>
+        const reserveModal = document.getElementById('reserveModal');
+        const openReserveBtn = document.getElementById('openReserveBtn');
+        const closeReserveBtn = document.querySelector('.close-reserve-modal');
+        const reserveForm = document.getElementById('reserveForm');
+        const reserveSuccessMsg = document.getElementById('reserveSuccessMsg');
+
+        if (openReserveBtn && reserveModal) {
+            openReserveBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                reserveModal.style.display = 'flex';
+                setTimeout(() => reserveModal.classList.add('show'), 10);
+                document.body.style.overflow = 'hidden';
+            });
+
+            const hideModal = () => {
+                reserveModal.classList.remove('show');
+                setTimeout(() => { reserveModal.style.display = 'none'; }, 300);
+                document.body.style.overflow = '';
+            };
+
+            if (closeReserveBtn) closeReserveBtn.addEventListener('click', hideModal);
+            reserveModal.addEventListener('click', (e) => {
+                if (e.target === reserveModal) hideModal();
+            });
+
+            if (reserveForm) {
+                reserveForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    reserveForm.style.display = 'none';
+                    if (reserveSuccessMsg) reserveSuccessMsg.style.display = 'block';
+                    setTimeout(() => {
+                        hideModal();
+                        reserveForm.style.display = 'flex';
+                        reserveForm.reset();
+                        if (reserveSuccessMsg) reserveSuccessMsg.style.display = 'none';
+                    }, 3000);
+                });
+            }
+        }
+    </script>
+    <script>
+        const glow = document.getElementById('glow');
+        if (glow) window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+    </script>
+</body>
+</html>

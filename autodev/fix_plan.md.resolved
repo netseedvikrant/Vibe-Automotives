@@ -1,0 +1,360 @@
+# AutoDev Fix Plan — Step by Step
+> Based on the Test Audit Report (29 issues)
+> Target: Full PRD Acceptance Criteria compliance
+
+---
+
+## Sprint 1 — P1 Critical: Missing Rework Loops (8 Fixes)
+> These are the blockers. The app cannot pass PRD without these.
+
+---
+
+### Fix 1 — Gate 0: Chief Engineer "Reject / Send Rework" Directive
+**File:** `src/components/ChiefDashboard.jsx`  
+**Problem:** Chief can only Approve or Conditionally Approve Gate 0 — no Reject/Rework path exists.
+
+**Steps:**
+1. In the Gate 0 approval panel, add a new `<textarea>` for "Rework Directive" text input (state: `gate0Directive`)
+2. Add a third button: **"Return for Rework"** alongside the existing Approve / Conditional buttons
+3. Wire it to a new handler `handleGate0Rework(program, directive)` that:
+   - Updates `workflow_instances.current_stage` → `'FEASIBILITY_REWORK_REQUIRED'`
+   - Inserts a `notifications` row with `type: 'error'` and the directive text
+   - Inserts an `activity_logs` row with the rejection reason
+   - Does NOT change `programs.status` (stays `Feasibility`)
+4. **Expected:** Chief submits directive → Lead sees it on their dashboard
+
+---
+
+### Fix 2 — Lead Dashboard: Show Rework Directive Received from Chief
+**File:** `src/components/LeadDashboard.jsx`  
+**Problem:** Lead has no way to see the Chief's rework reason after a Gate 0 rejection.
+
+**Steps:**
+1. In `fetchPrograms` (via `useDashboardData`), also fetch the latest `notifications` record where `type = 'error'` for each pending program
+2. In the "Activity Stream" section, add a conditional panel that shows if `workflow_instances.current_stage === 'FEASIBILITY_REWORK_REQUIRED'`:
+   ```
+   ⚠️ REWORK REQUIRED — Chief Engineer Directive:
+   "[directive text here]"
+   → Please revise your assessment and resubmit.
+   ```
+3. Add a **"Resubmit Assessment"** button in the Recommendation tab that becomes active again when stage is `FEASIBILITY_REWORK_REQUIRED`
+4. **Expected:** Lead can read the Chief's feedback and click through the tabs to resubmit
+
+---
+
+### Fix 3 — Feasibility Form: Save All Fields to Database
+**File:** `src/components/LeadDashboard.jsx`  
+**Problem:** Architecture observations textarea, TRL slider, Plant Readiness, and Resource fields are all static — not wired to state or saved.
+
+**Steps:**
+1. Add state variables for each section:
+   - `architectureNotes` (string)
+   - `trlScore` (number, default 7)
+   - `plantReadinessScore` (number, default 85)
+   - `plantReadinessNotes` (string)
+2. Wire all form inputs to their state variables with `onChange` handlers
+3. In `handleAssessmentSubmit`, pass these real values to the `technical_assessments` insert instead of the hardcoded mock values:
+   ```js
+   architecture_complexity: architectureNotes,
+   ev_compatibility_score: trlScore * 10,
+   plant_readiness_assessment: plantReadinessNotes,
+   ```
+4. **Expected:** What the Lead fills in is what gets saved and displayed to the Chief
+
+---
+
+### Fix 4 — DDR: Chief Rejection Sends Notification to Design Engineer
+**File:** `src/components/ChiefDashboard.jsx`  
+**Problem:** On DDR rejection, no notification is sent — design engineer doesn't know their DDR was rejected.
+
+**Steps:**
+1. In `handleChiefRejectDDR`, after the DDR status update, add:
+   ```js
+   await supabase.from('notifications').insert({
+     title: '🔴 DDR Rejected — Corrections Required',
+     message: `Your DDR "${ddr.title}" was rejected by the Chief Engineer. Reason: ${reason}. Upload a revised CAD and resubmit.`,
+     type: 'error'
+   });
+   ```
+2. **Expected:** Design Engineer sees rejection notification in the Bell icon / notification feed
+
+---
+
+### Fix 5 — Design Dashboard: "Resubmit DDR" Button After Rejection
+**File:** `src/components/DesignDashboard.jsx`  
+**Problem:** After a DDR is rejected (`Corrections Required`), there is no button for Design Engineer to resubmit — creating a new DDR via "Request DDR Review" makes a duplicate.
+
+**Steps:**
+1. In the DDR Review tab, fetch the current DDR status for the selected task
+2. Add a conditional block: if DDR status is `'Corrections Required'`, show a **"Resubmit for DDR Review"** button
+3. Wire it to a new handler `handleDDRResubmit(ddrId, latestCadId)` that:
+   - Updates `ddr_reviews` SET `status = 'Under Review'`, `cad_file_id = latestCadId`, `rejection_reason = null`
+   - Does NOT create a new DDR record
+4. Also update DDR status in the design task's status tracker (step indicator)
+5. **Expected:** After uploading a revised CAD, Design Engineer clicks "Resubmit" — same DDR record is updated, no duplicates
+
+---
+
+### Fix 6 — ECO Dashboard: "Resubmit ECO" After CFRB Veto
+**File:** `src/components/ECODashboard.jsx`  
+**Problem:** Once an ECO is `Rejected` by CFRB veto, there is no UI path to resubmit with a revised proposal.
+
+**Steps:**
+1. In the expanded ECO panel, add a condition: if `eco.status === 'Rejected'` AND the current user is a Lead/Design Engineer, show a **"Resubmit with Revised Proposal"** section:
+   - A `<textarea>` for updated description
+   - A **"Resubmit ECO"** button
+2. Wire it to a new handler `handleECOResubmit(ecoId, newDescription)` that:
+   - Updates `eco_requests` SET `status = 'Pending'`, `description = newDescription`, `rejection_reason = null`
+   - Deletes all previous `eco_votes` for this ECO (so CFRB votes fresh)
+   - Inserts an `activity_logs` entry
+3. **Expected:** After veto, the proposer revises the ECO description and resubmits for a fresh CFRB round
+
+---
+
+### Fix 7 — EBOM Dashboard: Edit Part Material After Rejection + Show Rejection Reason
+**File:** `src/components/EBOMDashboard.jsx`  
+**Problem (a):** The `UPDATE` option in `handleEditPart` says "not implemented."  
+**Problem (b):** Lead cannot see why Manufacturing rejected the BOM.
+
+**Steps:**
+1. **Show rejection reason:** Fetch the latest `mbom_reviews` record for the current program. If `status = 'Rejected'`, display a red alert box at the top of the workspace:
+   ```
+   ⚠️ MBOM Rejected — Manufacturing Comments:
+   "[rejection comments here]"
+   ```
+2. **Enable silent update:** In `handleEditPart`, replace the `UPDATE` stub with a real implementation:
+   - Prompt for the new material value
+   - Update `ebom.material` and reset `ebom.status = 'Under Review'`
+   - Insert an `activity_logs` entry: "BOM part NV-XXX material revised"
+3. Add a visible **"Edit Material"** button per row (not hidden behind a prompt)
+4. **Expected:** Lead sees why it was rejected, edits the material inline, and resubmits
+
+---
+
+### Fix 8 — Supplier Dashboard: "Resubmit PPAP" with Updated Cpk
+**File:** `src/components/SupplierDashboard.jsx`  
+**Problem:** Supplier cannot update Cpk and resubmit after Interim Approval — only option is a new submission.
+
+**Steps:**
+1. In the submissions table, add a conditional **"Update & Resubmit"** button that appears when `sub.status === 'Interim Approved'`
+2. Clicking it opens a small inline form or modal with:
+   - **Cpk Value** (pre-filled with current value)
+   - Optional: updated document URLs
+3. Wire it to `handleResubmitPpap(submissionId, newCpk, updatedUrls)` that:
+   - Updates `ppap_submissions` SET `cpk_value = newCpk`, `status = 'Pending'`, `interim_conditions = null`
+4. **Expected:** Supplier can update Cpk inline and send back to Quality for re-review
+
+---
+
+## Sprint 2 — P2 High: Schema & Feedback Gaps (6 Fixes)
+
+---
+
+### Fix 9 — Create `engineering_risks` Table in Supabase
+**File:** New SQL → run in Supabase SQL Editor  
+**Problem:** `ProgramManagerDashboard.jsx` queries `engineering_risks` but the table doesn't exist, causing silent KPI failures.
+
+**Steps:**
+1. Create and run this SQL in Supabase:
+   ```sql
+   CREATE TABLE IF NOT EXISTS public.engineering_risks (
+     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+     program_id uuid REFERENCES public.programs(id) ON DELETE CASCADE,
+     risk_title text NOT NULL,
+     severity text CHECK (severity IN ('Low', 'Medium', 'High', 'Critical')) DEFAULT 'Medium',
+     status text CHECK (status IN ('Open', 'Mitigated', 'Closed')) DEFAULT 'Open',
+     created_at timestamptz DEFAULT now()
+   );
+   ALTER TABLE public.engineering_risks ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY "Allow All" ON public.engineering_risks FOR ALL USING (true) WITH CHECK (true);
+   ```
+2. **Expected:** PM Dashboard "Open Risks" KPI loads without silent errors
+
+---
+
+### Fix 10 — Validation Test: ECO Auto-Trigger on Failure
+**File:** `src/components/ValidationDashboard.jsx`  
+**Problem:** Failing a test doesn't automatically create an ECO — it requires a separate manual "Fail Test (Trigger ECO)" click.
+
+**Steps:**
+1. In the `handleFailTest` function (or wherever test status is set to `'Failed'`), immediately after the status update, auto-insert an ECO record:
+   ```js
+   await supabase.from('eco_requests').insert({
+     program_id: test.program_id,
+     title: `Auto-ECO: ${test.test_name} Failed`,
+     description: `Test "${test.test_name}" failed. Reason: ${failureReason}. Redesign required.`,
+     priority: 'Urgent',
+     status: 'Pending',
+     change_type: 'Design'
+   });
+   ```
+2. Show a toast/alert: "Test marked Failed. ECO #xxx automatically created for CFRB review."
+3. **Expected:** One click to fail a test → ECO appears automatically on ECO Dashboard
+
+---
+
+### Fix 11 — Validation Tests: Set `program_id` on Auto-Creation
+**File:** `src/components/ManufacturingDashboard.jsx`  
+**Problem:** Auto-scheduled tests when build reaches `Complete` don't set `program_id`, breaking Quality Dashboard program-level filtering.
+
+**Steps:**
+1. In `advanceBuildStatus`, when creating validation tests, pass the build's `program_id`:
+   ```js
+   // Fetch program_id from the build record first
+   const build = prototypesBuilds.find(b => b.id === id);
+   await supabase.from('validation_tests').insert([
+     { prototype_id: id, program_id: build.program_id, test_name: 'Crash Worthiness...', ... },
+     ...
+   ]);
+   ```
+2. **Expected:** Tests are linkable by program on the Quality and Validation dashboards
+
+---
+
+### Fix 12 — MBOM Review: Show Rejection Reason to Lead in EBOM Dashboard
+> *(Covered in Fix 7 above — implement together)*
+
+---
+
+### Fix 13 — Remove Lead Engineer from `isProgramManager` in Navbar
+**File:** `src/components/Navbar.jsx`  
+**Problem:** Lead Engineer can see and click "+ New Program" — this should only be for Program Managers.
+
+**Steps:**
+1. Change line 7:
+   ```js
+   // Before:
+   const isProgramManager = profile?.role === 'Program Manager' || profile?.role === 'Lead Engineer';
+   // After:
+   const isProgramManager = profile?.role === 'Program Manager';
+   ```
+2. **Expected:** Only PM sees "+ New Program" — restores correct role boundaries
+
+---
+
+### Fix 14 — Chief Engineer: Design Tasks Auto-Assignment on Gate 0 Approval
+**File:** `src/components/ChiefDashboard.jsx`  
+**Problem:** After Gate 0 is approved, no design tasks are automatically assigned to the Design Engineer.
+
+**Steps:**
+1. In `handleGate0Approve` (the e-sign confirmation handler), after updating the program status to `Design`, insert default design tasks:
+   ```js
+   const defaultTasks = [
+     { task_name: 'CAD: Battery Packaging Design', subsystem: 'Powertrain', priority: 'High' },
+     { task_name: 'CAD: Chassis Structural Frame', subsystem: 'Chassis', priority: 'High' },
+     { task_name: 'CAD: HVAC Module Integration', subsystem: 'Body', priority: 'Medium' },
+   ];
+   for (const task of defaultTasks) {
+     await supabase.from('design_tasks').insert({
+       program_id: program.id,
+       assigned_engineer_id: null, // or fetch Design Engineer ID
+       ...task,
+       status: 'Not Started'
+     });
+   }
+   ```
+2. **Expected:** Design Engineer's dashboard shows tasks immediately after Gate 0 is approved
+
+---
+
+## Sprint 3 — P3 Medium: Static UI Sections (9 Fixes)
+
+---
+
+### Fix 15 — eBOM Linking Tab: Load Real Parts from Database
+**File:** `src/components/DesignDashboard.jsx`  
+**Problem:** eBOM linking tab shows a hardcoded static part list — not from the actual `ebom` table.
+
+**Steps:**
+1. Add a `useEffect` to fetch `ebom` records for the selected task's `program_id`
+2. Render the fetched parts in the linking table dynamically
+3. "Link" button updates a `design_tasks.ebom_refs` array or an association table
+
+---
+
+### Fix 16 — DDR Status Tracker: Live from Database
+**File:** `src/components/DesignDashboard.jsx`  
+**Problem:** The stage tracker (Initial → Cross Functional → Manufacturing → Quality) is hardcoded HTML.
+
+**Steps:**
+1. Fetch `ddr_reviews.current_stage` for the active task's DDR
+2. Map the stage string to which step is `active` vs `completed` in the tracker UI
+
+---
+
+### Fix 17 — PPAP: Filter by Logged-In Supplier
+**File:** `src/components/SupplierDashboard.jsx`  
+**Problem:** All PPAP submissions from all suppliers are visible to any logged-in supplier.
+
+**Steps:**
+1. Use `useAuth()` to get the current user's `id`
+2. In `fetchSupplierData`, add `.eq('supplier_id', profile.id)` filter to the `ppap_submissions` query
+
+---
+
+### Fix 18 — Supplier Name: Dynamic from Auth Profile
+**File:** `src/components/SupplierDashboard.jsx`  
+**Problem:** Header shows "Continental Engineering Services (ID: CONT-8842)" for all suppliers.
+
+**Steps:**
+1. Import `useAuth` hook
+2. Replace the hardcoded string with `{profile?.full_name} (ID: {profile?.id?.substring(0,8).toUpperCase()})`
+
+---
+
+### Fix 19 — PM Dashboard: "Production" Status Badge
+**File:** `src/components/ProgramManagerDashboard.jsx`  
+**Problem:** Programs in `Production` status don't have a distinct visual badge.
+
+**Steps:**
+1. In the program card status chip rendering, add a case for `'Production'`:
+   ```jsx
+   <span className={`status-chip ${program.status === 'Production' ? 'production' : ''}`}>
+     {program.status === 'Production' ? '🏭 In Production' : program.status}
+   </span>
+   ```
+2. Add `.production` CSS class with a green/gold color
+
+---
+
+### Fix 20 — EBOM: Role Guard (Only Lead & Chief Can Add/Edit)
+**File:** `src/components/EBOMDashboard.jsx`  
+**Steps:**
+1. Import `useAuth` and get `profile.role`
+2. Hide "Add Part" form and "Edit" buttons for roles other than `Lead Engineer` and `Chief Engineer`
+
+---
+
+### Fixes 21–23 — Minor Medium Items
+- **Fix 21:** ECO Dashboard — shared `voteComments` textarea should reset when a different ECO is expanded (reset `setVoteComments('')` on ECO expand toggle)
+- **Fix 22:** Manufacturing auto-tests — pass `assigned_engineer: null` instead of a string name (already fixed in simulation script; mirror to dashboard)
+- **Fix 23:** Post-Production Release — insert a success `notification` to all team members when Chief signs Gate 5
+
+---
+
+## Sprint 4 — P4 Low: Polish (6 Fixes)
+
+These are small quality-of-life and presentation fixes that don't block functionality:
+
+| # | Fix | File | Effort |
+|---|---|---|---|
+| 24 | Show post-assessment success message with "Next: Chief Engineer will review Gate 0" | `LeadDashboard.jsx` | 30 min |
+| 25 | After Gate 0 approval — show program in "Awaiting Design Tasks" state for Lead | `LeadDashboard.jsx` | 1 hr |
+| 26 | DVP&R: pass rate should be per-program, not global | `QualityDashboard.jsx` | 1 hr |
+| 27 | Chief Dashboard: add "Resolve" button on DDR comments panel | `ChiefDashboard.jsx` | 30 min |
+| 28 | CAD file real upload to Supabase Storage (not just metadata) | `DesignDashboard.jsx` | 2 hr |
+| 29 | PPAP resubmission should notify Quality Engineer automatically | `SupplierDashboard.jsx` | 30 min |
+
+---
+
+## Recommended Execution Order
+
+```
+Week 1: Sprint 1 (Fixes 1–8)  →  All rework loops functional
+Week 2: Sprint 2 (Fixes 9–14) →  Schema gaps closed, auto-triggers working
+Week 3: Sprint 3 (Fixes 15–23) →  UI reflects live data, no hardcoded sections
+Week 4: Sprint 4 (Fixes 24–29) →  Polish and production readiness
+```
+
+After Sprint 1 alone, the app will go from **65% → ~85%** PRD compliance.  
+After all 4 sprints, the app reaches **~97%** PRD compliance (remaining 3% = external calendar/PDM integrations, which are out of scope per the PRD itself).

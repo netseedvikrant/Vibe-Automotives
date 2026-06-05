@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainability & Environmental Impact | VIBE Automotives</title>
+    <meta name="description" content="Discover VIBE Automotives' commitment to a net-zero future. Read about our closed-loop battery recycling, sustainable materials, and calculate your custom carbon savings.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.2">
+    <style>
+        :root {
+            --emerald: #00ffaa;
+            --emerald-glow: rgba(0, 255, 170, 0.15);
+        }
+
+        body {
+            position: relative;
+        }
+
+        /* Ambient Background Orbs */
+        .ambient-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -2;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+        .orb-top-right {
+            width: 600px; height: 600px;
+            background: var(--emerald);
+            top: -10%; right: -10%;
+        }
+        .orb-bottom-left {
+            width: 500px; height: 500px;
+            background: var(--secondary);
+            bottom: -10%; left: -10%;
+        }
+
+        /* Header / Hero Padding */
+        .sus-hero {
+            padding: 160px 0 80px;
+            text-align: center;
+            position: relative;
+        }
+
+        .sus-hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            letter-spacing: -1px;
+            line-height: 1.1;
+        }
+
+        .sus-hero p.lead-text {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            line-height: 1.6;
+        }
+
+        .gradient-text.green {
+            background: linear-gradient(90deg, var(--emerald), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+            margin-bottom: 80px;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 255, 170, 0.3);
+            box-shadow: 0 15px 30px rgba(0, 255, 170, 0.08);
+        }
+
+        .stat-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .stat-card h3 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--emerald);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Main Initiatives Layout */
+        .initiatives {
+            padding: 60px 0;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .initiatives-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 80px;
+        }
+
+        .init-text h2 {
+            font-size: 2.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .init-text h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--emerald), var(--primary));
+            margin-top: 0.8rem;
+        }
+
+        .init-text p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .init-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .init-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.8rem;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+
+        .init-item:hover {
+            border-color: rgba(0, 255, 170, 0.25);
+            background: rgba(0, 255, 170, 0.01);
+            transform: translateX(5px);
+        }
+
+        .init-item h4 {
+            font-size: 1.15rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .init-item h4 span.icon {
+            font-size: 1.3rem;
+        }
+
+        .init-item p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Carbon Offset Calculator */
+        .calculator-section {
+            padding: 80px 0;
+            border-top: 1px solid var(--glass-border);
+            margin-bottom: 80px;
+        }
+
+        .calc-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .calc-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .calc-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .calc-container {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 3rem;
+            background: rgba(15, 15, 20, 0.55);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .calc-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
+        }
+
+        .calc-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .calc-input-group label {
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .calc-input-group select, .calc-input-group input {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .calc-input-group select:focus, .calc-input-group input:focus {
+            outline: none;
+            border-color: var(--emerald);
+            box-shadow: 0 0 15px rgba(0, 255, 170, 0.15);
+        }
+
+        .range-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .range-slider-container input[type="range"] {
+            flex-grow: 1;
+            accent-color: var(--emerald);
+            cursor: pointer;
+        }
+
+        .slider-val {
+            font-weight: 700;
+            color: var(--emerald);
+            font-size: 1.1rem;
+            min-width: 90px;
+            text-align: right;
+        }
+
+        .calc-outputs {
+            border-left: 1px solid var(--glass-border);
+            padding-left: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2.2rem;
+        }
+
+        .output-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .output-card:hover {
+            border-color: var(--emerald-glow);
+            background: rgba(0, 255, 170, 0.02);
+        }
+
+        .output-card .circle-icon {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(0, 255, 170, 0.08);
+            border: 1px solid rgba(0, 255, 170, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: var(--emerald);
+            flex-shrink: 0;
+        }
+
+        .output-data h4 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
+        }
+
+        .output-data p.value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.1;
+        }
+
+        .output-data p.value span.unit {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-left: 0.2rem;
+        }
+
+        /* Cursor Glow */
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: -1;
+            background: radial-gradient(circle, rgba(0,255,170,0.08), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+
+        @media (max-width: 968px) {
+            .initiatives-grid, .calc-container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+            .calc-outputs {
+                border-left: none;
+                padding-left: 0;
+                border-top: 1px solid var(--glass-border);
+                padding-top: 3rem;
+            }
+            .sus-hero h1 {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Glow Background Elements -->
+    <div class="ambient-glow orb-top-right"></div>
+    <div class="ambient-glow orb-bottom-left"></div>
+    <div class="cursor-glow" id="glow"></div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar glass-effect scrolled">
+        <div class="logo">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMOTIVES</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="index.html#showcase">Models</a></li>
+            <li><a href="index.html#about">About</a></li>
+            <li><a href="index.html#gallery">Gallery</a></li>
+        </ul>
+    </nav>
+
+    <!-- Careers Hero Page Title Section -->
+    <header class="sus-hero">
+        <div class="container">
+            <h1 class="reveal-text">ENGINEERING A <br><span class="gradient-text green">NET-ZERO</span> HORIZON</h1>
+            <p class="lead-text">At VIBE, environmental stewardship is not an afterthought—it is the operational base layer. We design sustainable closed loops into every cell, chassis, and assembly shift.</p>
+            <a href="#offsetCalculator" class="btn-glow" style="background: linear-gradient(90deg, var(--emerald), var(--primary)); color:#000;">Calculate Your Offset</a>
+        </div>
+    </header>
+
+    <!-- Key Statistics Grid -->
+    <section class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="icon">☀️</span>
+                <h3>100%</h3>
+                <p>Renewable Solar & Wind Uptime Across the Hypercharging Network</p>
+            </div>
+            <div class="stat-card">
+                <span class="icon">🔄</span>
+                <h3>95%</h3>
+                <p>Reclaimed Rare-Earth Materials via Closed-Loop Battery Audits</p>
+            </div>
+            <div class="stat-card">
+                <span class="icon">🌿</span>
+                <h3>2028</h3>
+                <p>Commitment to Net-Zero Carbon Neutrality Across Entire Supply Chain</p>
+            </div>
+            <div class="stat-card">
+                <span class="icon">🚯</span>
+                <h3>Zero</h3>
+                <p>Landfill Scrap Waste Generated Across Casting & Assembly Lines</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Initiatives Section -->
+    <section class="initiatives container">
+        <div class="initiatives-grid">
+            <div class="init-text">
+                <h2>Our Circular Blueprint</h2>
+                <p>Traditional automotive manufacturing follows a linear "take-make-waste" philosophy. At VIBE, we are establishing a fully circular supply chain. By linking our live material registries (managed through <strong>AutoSCM</strong>) with real-time tooling audits (managed in <strong>AutoMFG</strong>), we monitor the exact carbon cost of every bumper, rotor, and drive unit.</p>
+                <p>From using bio-composites derived from agricultural waste for interior doors to powering our heavy-duty casting presses with localized geothermal batteries, our production systems operate as ecosystems. We do not just build cleaner cars; we construct cleaner systems.</p>
+            </div>
+            
+            <div class="init-list">
+                
+                <div class="init-item">
+                    <h4><span class="icon">🔋</span> Antigravity Battery Recovery</h4>
+                    <p>When VIBE battery packs drop below 80% capacity after hundreds of thousands of miles, they are systematically decommissioned and repurposed as grid-stabilization batteries for solar storage before ultimate recycling.</p>
+                </div>
+
+                <div class="init-item">
+                    <h4><h4><span class="icon">🌊</span> Ocean Plastic Textiles</h4>
+                    <p>VIBE Echelon and Horizon cabins are upholstered with vegan micro-suede and ocean-bound post-consumer plastics, diverting marine waste and eliminating the need for animal products.</p>
+                </div>
+
+                <div class="init-item">
+                    <h4><span class="icon">⚙️</span> Smart Press Power Shaving</h4>
+                    <p>Our stamping lines monitor live power grids via machine learning algorithms, scheduling high-load press cycles during peak solar abundance hours to reduce grid strain and maximize renewable utility.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Offset Calculator Section -->
+    <section class="calculator-section container" id="offsetCalculator">
+        <div class="calc-header">
+            <h2>Carbon <span>Offset Calculator</span></h2>
+            <p>Input your current driving metrics below to calculate your estimated annual carbon footprint reduction and fuel savings by transitioning to a VIBE EV.</p>
+        </div>
+
+        <div class="calc-container">
+            <!-- Inputs -->
+            <div class="calc-inputs">
+                <div class="calc-input-group">
+                    <label for="vehicleType">Current Vehicle Category</label>
+                    <select id="vehicleType">
+                        <option value="hybrid" selected>Standard Hybrid (e.g. 4-Cylinder)</option>
+                        <option value="sedan">Internal Combustion Sedan (e.g. V6)</option>
+                        <option value="suv">Internal Combustion SUV / Truck (e.g. V8)</option>
+                    </select>
+                </div>
+
+                <div class="calc-input-group">
+                    <label for="annualMileage">Estimated Annual Distance</label>
+                    <div class="range-slider-container">
+                        <input type="range" id="annualMileage" min="2000" max="40000" step="1000" value="12000">
+                        <span class="slider-val" id="mileageVal">12,000 mi</span>
+                    </div>
+                </div>
+
+                <div class="calc-input-group">
+                    <label for="fuelCost">Local Fuel Price (per gallon / liter)</label>
+                    <div class="range-slider-container">
+                        <input type="range" id="fuelCost" min="2.00" max="8.00" step="0.10" value="3.80">
+                        <span class="slider-val" id="fuelCostVal">$3.80</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outputs -->
+            <div class="calc-outputs">
+                
+                <!-- Output 1: Carbon Offset -->
+                <div class="output-card">
+                    <div class="circle-icon">🌳</div>
+                    <div class="output-data">
+                        <h4>Annual Carbon Reduction</h4>
+                        <p class="value" id="carbonSavings">2.2 <span class="unit">Metric Tons CO₂</span></p>
+                    </div>
+                </div>
+
+                <!-- Output 2: Trees Equivalent -->
+                <div class="output-card">
+                    <div class="circle-icon">🌱</div>
+                    <div class="output-data">
+                        <h4>Forest Equivalent</h4>
+                        <p class="value" id="treeEquivalent">98 <span class="unit">Mature Trees Saved / Year</span></p>
+                    </div>
+                </div>
+
+                <!-- Output 3: Fuel Savings -->
+                <div class="output-card">
+                    <div class="circle-icon">💸</div>
+                    <div class="output-data">
+                        <h4>Annual Fuel Cost Saved</h4>
+                        <p class="value" id="financialSavings">$816 <span class="unit">Saved / Year</span></p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <div class="logo">
+                    <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_footer)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_footer)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_footer" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_footer" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE</span>
+                </div>
+                <p>Pioneering the future of mobility through integrated enterprise intelligence.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Vehicles</h4>
+                <ul>
+                    <li><a href="index.html#showcase">VIBE Echelon</a></li>
+                    <li><a href="index.html#showcase">VIBE Horizon</a></li>
+                    <li><a href="index.html#showcase">VIBE Apex</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="index.html#about">About VIBE</a></li>
+                    <li><a href="careers.html">Careers</a></li>
+                    <li><a href="sustainability.html" style="color: var(--emerald);">Sustainability</a></li>
+                    <li><a href="news.html">News & Press</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Experience</h4>
+                <ul>
+                    <li><a href="#" class="open-test-drive-btn">Book a Test Drive</a></li>
+                    <li><a href="index.html#gallery">Find a Gallery</a></li>
+                    <li><a href="index.html#openLoginBtn">Corporate Login</a></li>
+                    <li><a href="#" class="open-support-btn">Support & Help</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 VIBE Automotives. All rights reserved.</p>
+            <div class="legal">
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Cursor Glow Positioning
+        const glow = document.getElementById('glow');
+        if (glow) {
+            window.addEventListener('mousemove', e => {
+                glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+            });
+        }
+
+        // Carbon Calculator Logic
+        const vehicleTypeSelect = document.getElementById('vehicleType');
+        const annualMileageSlider = document.getElementById('annualMileage');
+        const mileageValDisplay = document.getElementById('mileageVal');
+        const fuelCostSlider = document.getElementById('fuelCost');
+        const fuelCostValDisplay = document.getElementById('fuelCostVal');
+
+        const carbonSavingsOutput = document.getElementById('carbonSavings');
+        const treeEquivalentOutput = document.getElementById('treeEquivalent');
+        const financialSavingsOutput = document.getElementById('financialSavings');
+
+        // Vehicle Carbon/Fuel coefficients
+        const coefficients = {
+            // MPG averages & CO2 emissions in kg per mile
+            // Standard EPA averages:
+            // - Hybrid: ~45-50 MPG, 0.18 kg CO2/mi (highly environment friendly for gas cars)
+            // - Sedan: ~25-30 MPG, 0.32 kg CO2/mi (medium footprint)
+            // - Truck / SUV: ~15-20 MPG, 0.50 kg CO2/mi (large footprint)
+            hybrid: { mpg: 48, co2PerMile: 0.18 },
+            sedan: { mpg: 28, co2PerMile: 0.32 },
+            suv: { mpg: 18, co2PerMile: 0.50 }
+        };
+
+        // EV metrics
+        // VIBE EVs benefit from our 100% renewable solar network, making use-phase charging costs negligible
+        const averageKwhCost = 0.04; // $0.04 per kWh (Solar-subsidized rate)
+        const kwhPerMile = 0.28; // 0.28 kWh per mile
+
+        function calculateOffset() {
+            const vehicleType = vehicleTypeSelect.value;
+            const annualMileage = parseFloat(annualMileageSlider.value);
+            const fuelCost = parseFloat(fuelCostSlider.value);
+
+            // 1. Update UI slider values
+            mileageValDisplay.textContent = annualMileage.toLocaleString() + ' mi';
+            fuelCostValDisplay.textContent = '$' + fuelCost.toFixed(2);
+
+            // 2. Carbon Calculation
+            // ICE CO2: mileage * co2PerMile
+            // VIBE CO2: VIBE uses renewable energy (0 net emissions from grid in calculations)
+            // Save in Metric Tons (1 Metric Ton = 1000 kg)
+            const iceCo2 = annualMileage * coefficients[vehicleType].co2PerMile;
+            const carbonSavedKg = iceCo2; // VIBE net zero charging
+            const carbonSavedTons = (carbonSavedKg / 1000).toFixed(1);
+
+            // 3. Tree Equivalent
+            // A mature tree absorbs about 22kg CO2 per year
+            const treesSaved = Math.round(carbonSavedKg / 22);
+
+            // 4. Financial Calculation
+            const iceFuelGallons = annualMileage / coefficients[vehicleType].mpg;
+            const iceAnnualFuelCost = iceFuelGallons * fuelCost;
+
+            // EV Charging cost: annualMileage * kwhPerMile * averageKwhCost
+            const evAnnualChargingCost = annualMileage * kwhPerMile * averageKwhCost;
+            const cashSaved = Math.round(iceAnnualFuelCost - evAnnualChargingCost);
+
+            // 5. Update outputs in UI
+            carbonSavingsOutput.innerHTML = `${carbonSavedTons} <span class="unit">Metric Tons CO₂</span>`;
+            treeEquivalentOutput.innerHTML = `${treesSaved.toLocaleString()} <span class="unit">Mature Trees Saved / Year</span>`;
+            financialSavingsOutput.innerHTML = `$${cashSaved.toLocaleString()} <span class="unit">Saved / Year</span>`;
+        }
+
+        // Event listeners
+        vehicleTypeSelect.addEventListener('change', calculateOffset);
+        annualMileageSlider.addEventListener('input', calculateOffset);
+        fuelCostSlider.addEventListener('input', calculateOffset);
+
+        // Run initial calculation
+        calculateOffset();
+    </script>
+    <script src="test-drive.js"></script>
+</body>
+</html>

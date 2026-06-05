@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE Automotives | Integrated Platform</title>
+    <meta name="description" content="VIBE Automotives - Enterprise Manufacturing & Product Development Suite">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.2">
+    <style>
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(0,240,255,0.10), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+        @media (max-width: 860px) { .cursor-glow { display: none; } }
+    </style>
+</head>
+<body>
+    <!-- Full-Screen Video Intro Overlay -->
+    <div id="videoIntroOverlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5, 5, 8, 0.4); z-index: 99999; display: none; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; transition: opacity 0.8s ease, visibility 0.8s ease; backdrop-filter: blur(20px) saturate(140%);">
+        <!-- Centered Aspect-Ratio Frame -->
+        <div style="width: 85vw; height: 85vh; max-width: 1200px; max-height: 675px; background: #000; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; overflow: hidden; position: relative; box-shadow: 0 30px 70px rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;">
+            <video id="introVideo" autoplay playsinline style="width: 100%; height: 100%; object-fit: contain;">
+                <source src="assets/adv.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div style="position: absolute; top: 2rem; right: 2rem; display: flex; gap: 1rem; z-index: 100000;">
+            <button id="muteVideoBtn" style="color: #fff; background: rgba(0,0,0,0.5); padding: 0.5rem 1rem; border-radius: 20px; font-family: 'Outfit', sans-serif; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s ease; outline: none;">
+                🔊 Mute
+            </button>
+            <div style="color: #fff; background: rgba(0,0,0,0.5); padding: 0.5rem 1rem; border-radius: 20px; font-family: 'Outfit', sans-serif; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; backdrop-filter: blur(10px);">
+                Click anywhere to skip
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('videoIntroOverlay');
+            const video = document.getElementById('introVideo');
+            const muteBtn = document.getElementById('muteVideoBtn');
+
+            if (overlay && video) {
+                // Check if intro has already run in this session
+                if (sessionStorage.getItem('vibeIntroPlayed')) {
+                    overlay.remove();
+                } else {
+                    overlay.style.display = 'flex';
+                    
+                    // Try to play with sound (default)
+                    video.muted = false;
+                    video.play().catch(err => {
+                        console.log("Autoplay with audio blocked. Falling back to muted play...", err);
+                        // Fallback: play muted
+                        video.muted = true;
+                        if (muteBtn) muteBtn.textContent = '🔇 Unmute';
+                        video.play().catch(err2 => {
+                            console.error("Muted play failed as well:", err2);
+                        });
+                    });
+                    
+                    sessionStorage.setItem('vibeIntroPlayed', 'true');
+                }
+
+                if (muteBtn) {
+                    muteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Stop click from skipping the video
+                        if (video.muted) {
+                            video.muted = false;
+                            muteBtn.textContent = '🔊 Mute';
+                        } else {
+                            video.muted = true;
+                            muteBtn.textContent = '🔇 Unmute';
+                        }
+                    });
+                }
+
+                const closeIntro = () => {
+                    video.pause();
+                    overlay.style.opacity = '0';
+                    overlay.style.visibility = 'hidden';
+                    setTimeout(() => {
+                        overlay.remove();
+                    }, 800);
+                };
+
+                video.addEventListener('ended', closeIntro);
+                overlay.addEventListener('click', closeIntro);
+            }
+        });
+    </script>
+
+    <div class="cursor-glow" id="glow"></div>
+    <nav class="navbar glass-effect">
+        <div class="logo">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear)"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                    <linearGradient id="paint1_linear" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00F0FF"/>
+                        <stop offset="1" stop-color="#0055FF"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMOTIVES</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#showcase">Models</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#gallery">Gallery</a></li>
+        </ul>
+    </nav>
+
+    <section id="hero" class="hero">
+        <div class="hero-bg">
+            <img src="assets/hero_car_bg_1779115408143.png" alt="Futuristic Concept EV">
+            <div class="overlay"></div>
+        </div>
+        <div class="hero-content">
+            <h1 class="reveal-text">THE FUTURE OF <br><span class="gradient-text">MOBILITY</span></h1>
+            <p class="fade-in-up">Experience unparalleled performance and sustainability with the Antigravity Platform.</p>
+            <div class="hero-actions fade-in-up delay-1">
+                <a href="#showcase" class="btn-primary">Explore Models</a>
+                <a href="#about" class="btn-secondary">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="showcase" class="showcase">
+        <div class="container">
+            <h2 class="section-title">Current <span>Models</span></h2>
+            <div class="grid">
+                <div class="card glass-card fade-in-up">
+                    <div class="card-img">
+                        <img src="assets/model_s_showcase_1779115446815.png" alt="VIBE Echelon">
+                    </div>
+                    <div class="card-content">
+                        <h3>VIBE Echelon</h3>
+                        <p>Luxury electric sedan redefining executive travel with autonomous capabilities.</p>
+                        <a href="echelon.html" class="btn-text">Discover Echelon &rarr;</a>
+                    </div>
+                </div>
+                <div class="card glass-card fade-in-up delay-1">
+                    <div class="card-img">
+                        <img src="assets/model_x_showcase_1779115427637.png" alt="VIBE Horizon">
+                    </div>
+                    <div class="card-content">
+                        <h3>VIBE Horizon</h3>
+                        <p>Sleek modern electric SUV designed for the adventurous soul and family journeys.</p>
+                        <a href="horizon.html" class="btn-text">Discover Horizon &rarr;</a>
+                    </div>
+                </div>
+                <div class="card glass-card fade-in-up delay-2">
+                    <div class="card-img">
+                        <img src="assets/model_z_showcase_1779115464193.png" alt="VIBE Apex">
+                    </div>
+                    <div class="card-content">
+                        <h3>VIBE Apex</h3>
+                        <p>High-performance electric sports car engineered for the track and the enthusiast.</p>
+                        <a href="apex.html" class="btn-text">Discover Apex &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="about glass-panel">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-text fade-in-left">
+                    <h2 class="section-title">About <span>VIBE</span></h2>
+
+                    <p class="lead" style="color: var(--primary);">
+                        Pioneering the future of mobility through AI‑driven intelligence.
+                    </p>
+
+                    <p style="margin-bottom: 1rem;">
+                        VIBE Automotives fuses cutting‑edge
+                        <strong>Antigravity OS</strong>, next‑gen electric powertrains, and a
+                        <strong>global hyper‑charging network</strong> to deliver a seamless, zero‑emission
+                        experience for enterprise fleets, premium consumers, and high‑performance enthusiasts.
+                    </p>
+
+                    <ul class="feature-list" style="list-style:none; margin-left:0; line-height:1.6;">
+                        <li>🔧 <strong>Integrated SCM & R&amp;D</strong>: Real‑time supply‑chain visibility across all three VIBE models.</li>
+                        <li>⚡ <strong>Hyper‑Charging</strong>: 45 k+ stations worldwide, 350 kW DC fast charge, 99.9 % renewable uptime.</li>
+                        <li>🧭 <strong>Autonomous Driving</strong>: Antigravity Autopilot v4.2 (Level 4) with predictive routing.</li>
+                        <li>🌱 <strong>Sustainability</strong>: 100 % carbon‑neutral production, recycled‑material interiors, and closed‑loop battery recycling.</li>
+                    </ul>
+
+                    <p style="margin-top: 1rem;">
+                        Since our launch in 2022, VIBE has empowered
+                        <strong>over 200 k</strong> vehicles on the road, partnered with
+                        <strong>Fortune 500</strong> enterprises, and earned multiple
+                        <strong>Innovation Awards</strong> for safety, design, and environmental stewardship.
+                    </p>
+
+                    <a href="about.html" class="btn-glow full-width" style="margin-top:1.5rem;">
+                        Learn More About VIBE &rarr;
+                    </a>
+                </div>
+
+                <!-- Optional visual illustration (keep existing image or replace) -->
+                <div class="about-visual fade-in-right">
+                    <img src="assets/hero_car_bg_1779115408143.png"
+                        alt="VIBE futuristic cityscape"
+                        style="width:100%; border-radius:12px; filter:drop-shadow(0 10px 20px rgba(0,240,255,0.25));">
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section id="gallery" class="gallery">
+        <div class="container">
+            <h2 class="section-title text-center">Inside <span>VIBE</span></h2>
+            <div class="carousel-container fade-in-up">
+                <div class="carousel-track">
+                    <div class="carousel-slide active">
+                        <img src="assets/gallery_1_1779115488247.png" alt="Manufacturing">
+                        <div class="slide-caption">Precision Manufacturing: Automated robotic assembly lines</div>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/gallery_2_1779115504557.png" alt="Interior">
+                        <div class="slide-caption">Cockpit Design: Curved glass displays & premium materials</div>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/gallery_3_1779115520858.png" alt="Aerodynamics">
+                        <div class="slide-caption">Aerodynamics: Carbon-fiber active aero wheels</div>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/gallery_4_1779261515139.png" alt="Design Studio">
+                        <div class="slide-caption">Clay Modeling: Designing the silhouettes of tomorrow</div>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/gallery_5_1779261531530.png" alt="Skateboard Chassis">
+                        <div class="slide-caption">Antigravity Platform: Modular skateboard chassis architecture</div>
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/gallery_6_1779261546823.png" alt="Charging Station">
+                        <div class="slide-caption">Hypercharging: Ultrafast charging under solar canopy networks</div>
+                    </div>
+                </div>
+                <button class="carousel-btn prev">&lt;</button>
+                <button class="carousel-btn next">&gt;</button>
+                <div class="carousel-dots">
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Corporate Login Modal -->
+    <div id="loginModal" class="modal" style="display: none;">
+        <div class="modal-content glass-effect">
+            <span class="close-modal">&times;</span>
+            <div class="modal-body">
+                <div class="modal-logo">
+                    <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_modal)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_modal)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_modal" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_modal" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE AUTOMOTIVES</span>
+                </div>
+                <h3>Corporate Staff Login</h3>
+                <p class="modal-subtitle">Antigravity Platform Enterprise Access</p>
+                <form id="loginForm">
+                    <div id="loginError" style="color: #ff4e4e; font-size: 0.85rem; margin-bottom: 1rem; text-align: center; display: none; padding: 0.5rem; background: rgba(255, 78, 78, 0.1); border: 1px solid rgba(255, 78, 78, 0.2); border-radius: 4px;"></div>
+                    <div class="input-group">
+                        <label for="email">Email or Badge ID</label>
+                        <input type="text" id="email" required placeholder="Enter corporate email">
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required placeholder="Enter password">
+                    </div>
+                    <div class="form-options">
+                        <label><input type="checkbox"> Remember me</label>
+                        <a href="#" class="forgot">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="btn-glow full-width">Access Platform</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal" style="display: none;">
+        <div class="modal-content glass-effect">
+            <span class="close-forgot-modal close-modal">&times;</span>
+            <div class="modal-body">
+                <div class="modal-logo">
+                    <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_forgot)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_forgot)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_forgot" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_forgot" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE AUTOMOTIVES</span>
+                </div>
+                <h3>Reset Portal Password</h3>
+                <p class="modal-subtitle">Direct HR verification request</p>
+                <form id="forgotForm">
+                    <div id="forgotSuccess" style="color: #00e5ff; font-size: 0.85rem; margin-bottom: 1.2rem; text-align: center; display: none; padding: 0.6rem; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 6px; line-height: 1.4;"></div>
+                    <div class="input-group">
+                        <label for="forgotName">Full Name</label>
+                        <input type="text" id="forgotName" required placeholder="Enter your full name">
+                    </div>
+                    <div class="input-group">
+                        <label for="forgotEmail">Corporate Email Address</label>
+                        <input type="email" id="forgotEmail" required placeholder="Enter your corporate email">
+                    </div>
+                    <button type="submit" class="btn-glow full-width">Send Request to HR</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charging Network Modal -->
+    <div id="chargingModal" class="modal" style="display: none;">
+        <div class="modal-content glass-effect" style="max-width: 700px; padding: 2.5rem;">
+            <span class="close-charging-modal close-modal">&times;</span>
+            <div class="modal-body" style="text-align: center;">
+                <div class="modal-logo">
+                    <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_charge)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_charge" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE AUTOMOTIVES</span>
+                </div>
+                <h3 style="margin-bottom: 0.5rem;">VIBE Hypercharging Network</h3>
+                <p class="modal-subtitle" style="margin-bottom: 1.5rem; color: var(--primary);">Global Supercharger Infrastructure</p>
+                <div style="text-align: left; margin-bottom: 2rem; font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+                    <p style="margin-bottom: 1rem;">VIBE's global charging infrastructure represents the world's most advanced, ultra-high-speed network. Spanning over <strong>45,000 Hypercharging points</strong> across North America, Europe, and Asia-Pacific, our stations deliver up to <strong>350 kW DC fast charging</strong>, capable of charging a VIBE vehicle from 10% to 80% in under 15 minutes.</p>
+                    <p>Designed with micro-grid solar integration and battery buffering systems, our charging hubs boast <strong>99.9% uptime</strong> and are powered by 100% renewable energy, delivering a seamless, carbon-neutral charging experience globally.</p>
+                </div>
+                <div class="map-preview-container" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.5); margin-bottom: 1.5rem;">
+                    <img src="assets/map.png" alt="VIBE Global Charging Map (Click to zoom)" style="width: 100%; display: block; filter: brightness(0.95) contrast(1.05);">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Lightbox Modal -->
+    <div id="mapLightboxModal" class="modal" style="display: none; background-color: rgba(0, 0, 0, 0.95); z-index: 3000;">
+        <span class="close-lightbox close-modal" style="font-size: 3rem; color: #fff; right: 30px; top: 30px;">&times;</span>
+        <div style="max-width: 95%; max-height: 95%; display: flex; align-items: center; justify-content: center; cursor: zoom-out;">
+            <img src="assets/map.png" alt="VIBE Global Charging Map Fullscreen" style="max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 0 50px rgba(0, 240, 255, 0.25);">
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <div class="logo">
+                    <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_footer)"/>
+                        <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                        <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_footer)"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_footer" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                            <linearGradient id="paint1_linear_footer" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00F0FF"/>
+                                <stop offset="1" stop-color="#0055FF"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>VIBE</span>
+                </div>
+                <p>Pioneering the future of mobility through integrated enterprise intelligence.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Vehicles</h4>
+                <ul>
+                    <li><a href="#showcase">VIBE Echelon</a></li>
+                    <li><a href="#showcase">VIBE Horizon</a></li>
+                    <li><a href="#showcase">VIBE Apex</a></li>
+                    <li><a href="#" id="openChargingBtn">Charging Network</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#about">About VIBE</a></li>
+                    <li><a href="careers.html">Careers</a></li>
+                    <li><a href="sustainability.html">Sustainability</a></li>
+                    <li><a href="news.html">News & Press</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Experience</h4>
+                <ul>
+                    <li><a href="#" class="open-test-drive-btn">Book a Test Drive</a></li>
+                    <li><a href="#gallery">Find a Gallery</a></li>
+                    <li><a href="#" id="openLoginBtn">Corporate Login</a></li>
+                    <li><a href="#" class="open-support-btn">Support & Help</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 VIBE Automotives. All rights reserved.</p>
+            <div class="legal">
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Supabase integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+    <script src="script.js?v=1.2"></script>
+    <script src="test-drive.js"></script>
+    <script>
+        const glow = document.getElementById('glow');
+        if (glow) window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+    </script>
+</body>
+</html>

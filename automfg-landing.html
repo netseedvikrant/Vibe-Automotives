@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE AutoMFG | Manufacturing Gateway</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        .cursor-glow {
+            position: fixed; top: 0; left: 0; width: 480px; height: 480px;
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(0,240,255,0.10), transparent 60%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            mix-blend-mode: screen;
+        }
+        @media (max-width: 860px) { .cursor-glow { display: none; } }
+        :root {
+            --bg-dark: #040806;
+            --bg-darker: #000000;
+            --primary: #00ffaa;
+            --secondary: #008b5e;
+            --text-main: #ffffff;
+            --text-muted: #88a498;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(10, 15, 12, 0.6);
+            --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background */
+        .glow-orb {
+            position: absolute;
+            width: 700px; height: 700px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.15;
+            top: -10%; left: -10%;
+            background: radial-gradient(circle, var(--primary), var(--secondary));
+        }
+
+        /* Navbar */
+        .navbar {
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            background: rgba(5, 8, 6, 0.6);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-weight: 800;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        /* Dashboard Layout Grid */
+        .container {
+            max-width: 1250px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 2.5rem;
+            z-index: 1;
+        }
+
+        /* Left Side */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .header-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .badge {
+            background: rgba(0, 255, 170, 0.1);
+            border: 1px solid rgba(0, 255, 170, 0.25);
+            color: var(--primary);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: inline-block;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .header-section h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            line-height: 1.15;
+        }
+
+        .header-section p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .summary-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.8rem;
+            backdrop-filter: blur(12px);
+            transition: var(--transition);
+        }
+
+        .summary-card:hover {
+            border-color: rgba(0, 255, 170, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .summary-card h4 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+        }
+
+        .summary-card .number {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .summary-card .trend {
+            font-size: 0.8rem;
+            color: #00ff66;
+            margin-top: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Launcher */
+        .launcher-panel {
+            background: linear-gradient(135deg, rgba(0, 139, 94, 0.12), rgba(0, 255, 170, 0.03));
+            border: 1px solid rgba(0, 255, 170, 0.2);
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            backdrop-filter: blur(16px);
+        }
+
+        .launcher-panel h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .launcher-panel p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .btn-launch-primary {
+            display: inline-block;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            color: #000000;
+            border: none;
+            padding: 1.1rem 3.5rem;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 10px 25px rgba(0, 255, 170, 0.2);
+        }
+
+        .btn-launch-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(0, 255, 170, 0.35);
+        }
+
+        /* Right Side Details Panel */
+        .details-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.2rem;
+            backdrop-filter: blur(16px);
+        }
+
+        .section-card h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Achievements timeline */
+        .achievement-item {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .achievement-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .achievement-item::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 5px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .achievement-item::after {
+            content: '';
+            position: absolute;
+            left: 4px; top: 20px;
+            width: 2px; height: calc(100% + 15px);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .achievement-item:last-child::after {
+            display: none;
+        }
+
+        .achievement-item h5 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+            color: var(--text-main);
+        }
+
+        .achievement-item p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Employee of the month card */
+        .eom-card {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .avatar-circle {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #000;
+            border: 2px solid rgba(255,255,255,0.1);
+            box-shadow: 0 5px 15px rgba(0, 255, 170, 0.15);
+        }
+
+        .eom-info {
+            flex-grow: 1;
+        }
+
+        .eom-info h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+
+        .eom-info .title {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.6rem;
+            text-transform: uppercase;
+        }
+
+        .eom-info .quote {
+            font-size: 0.85rem;
+            font-style: italic;
+            color: var(--text-muted);
+            line-height: 1.4;
+            border-left: 2px solid var(--secondary);
+            padding-left: 0.8rem;
+        }
+
+        /* Bulletins */
+        .bulletin-list {
+            list-style: none;
+        }
+
+        .bulletin-item {
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .bulletin-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .bulletin-item span {
+            color: var(--primary);
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        /* Modal Prototype Alert */
+        .alert-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-box {
+            background: rgba(5, 10, 8, 0.95);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            max-width: 450px;
+            width: 90%;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 255, 170, 0.25);
+            animation: scaleUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .alert-box h4 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .alert-box p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .btn-alert-close {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-alert-close:hover {
+            background: #fff;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: var(--bg-darker);
+            z-index: 10;
+        }
+
+        @keyframes scaleUp {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 968px) {
+            .container { grid-template-columns: 1fr; gap: 2rem; }
+            .header-section h1 { font-size: 2.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow-orb"></div>
+
+    <nav class="navbar">
+        <a href="portal.html" class="logo">
+            <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear)"/>
+                <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#00ffaa"/>
+                        <stop offset="1" stop-color="#008b5e"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>VIBE AUTOMFG</span>
+        </a>
+        <a href="portal.html" class="back-link">
+            &larr; Back to Portal
+        </a>
+    </nav>
+
+    <main class="container">
+        <!-- Left Column -->
+        <div class="main-panel">
+            <div class="header-section">
+                <span class="badge">Production & Assembly</span>
+                <h1>AutoMFG Workspace Gateway</h1>
+                <p>Monitor shop floor work center efficiency, manage equipment availability, trace OEE, and resolve pending Andon event overrides.</p>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h4>Line OEE Average</h4>
+                    <div class="number">88.4%</div>
+                    <div class="trend">&uarr; 1.2% above target</div>
+                </div>
+                <div class="summary-card">
+                    <h4>Active Shop Work Orders</h4>
+                    <div class="number">14</div>
+                    <div class="trend">6 in assembly phase</div>
+                </div>
+                <div class="summary-card">
+                    <h4>Andon Event Status</h4>
+                    <div class="number" style="color: #00ffaa;">0 Active</div>
+                    <div class="trend">All stations clear</div>
+                </div>
+            </div>
+
+            <div class="launcher-panel">
+                <h2>Proceed to Shop Floor Dashboard</h2>
+                <p>Access the real-time manufacturing OEE and scheduling control board. Ensure your plant supervisor token is activated in your session before requesting plan overrides.</p>
+                <button onclick="launchMFG()" class="btn-launch-primary">Launch AutoMFG Dashboard</button>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="details-panel">
+            <!-- Achievements -->
+            <div class="section-card">
+                <h3>Q2 Achievements</h3>
+                <div class="achievement-item">
+                    <h5>Smart Factory AGV Deployment</h5>
+                    <p>Fully automated part transportation in stamping division. Reduced material handling transit delays by 35% across shifts.</p>
+                </div>
+                <div class="achievement-item">
+                    <h5>Safety Record Milestone</h5>
+                    <p>Stamping & Press Floor 3 successfully reached 500 consecutive operational shifts with zero reportable safety incidents.</p>
+                </div>
+                <div class="achievement-item">
+                    <h5>Cycle Time Optimization</h5>
+                    <p>Programmed assembly arm feedback loops, trimming 18 seconds off the Model S battery pack installation sequence.</p>
+                </div>
+            </div>
+
+            <!-- Employee of the Month -->
+            <div class="section-card">
+                <h3>Employee of the Month</h3>
+                <div class="eom-card">
+                    <div class="avatar-circle" id="eom-avatar">MR</div>
+                    <div class="eom-info">
+                        <h4 id="eom-name">Marcus Rodriguez</h4>
+                        <div class="title" id="eom-role">Stamping Line Operations Supervisor</div>
+                        <p class="quote" id="eom-quote">"Safety and precision on the line translate directly to the driver's confidence on the road."</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulletins -->
+            <div class="section-card">
+                <h3>Plant Bulletins</h3>
+                <ul class="bulletin-list">
+                    <li class="bulletin-item"><span>[MAINTENANCE]</span> Line 2 robot recalibration completed 40 minutes ahead of schedule.</li>
+                    <li class="bulletin-item"><span>[AUDIT]</span> Plant safety inspection scheduled for Tuesday. Keep pathways clear.</li>
+                    <li class="bulletin-item"><span>[OEE]</span> Shift OEE target exceeded by 2.4% during yesterday's evening run.</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- Simulated Alert -->
+    <div id="alertOverlay" class="alert-overlay">
+        <div class="alert-box">
+            <h4>AutoMFG System Offline</h4>
+            <p>The AutoMFG Manufacturing Execution System (MES) is undergoing routine scheduled maintenance. Connecting to Supabase plant-server clusters. Full access will be available at the start of the next shift.</p>
+            <button class="btn-alert-close" onclick="closeAlert()">Acknowledge</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 VIBE Automotives. All rights reserved. Manufacturing Division Confidential.</p>
+    </footer>
+
+    <script>
+        // Restrict access to logged in users only
+        document.addEventListener('DOMContentLoaded', () => {
+            const userSession = sessionStorage.getItem('vibe_user');
+            if (!userSession) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Dynamically load Employee of the Month if nominated
+            const currentEom = localStorage.getItem('vibe_current_eom');
+            if (currentEom) {
+                document.getElementById('eom-name').textContent = currentEom;
+                // Generate initials
+                const initials = currentEom.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                document.getElementById('eom-avatar').textContent = initials;
+                
+                // Set role and quote based on who it is
+                if (currentEom === 'Sarah Chen') {
+                    document.getElementById('eom-role').textContent = 'Lead Thermal Engineer';
+                    document.getElementById('eom-quote').textContent = '"Led fast-charging validation under extreme specs 3 weeks ahead of schedule."';
+                } else if (currentEom === 'Alicia Wong') {
+                    document.getElementById('eom-role').textContent = 'Shift Supervisor';
+                    document.getElementById('eom-quote').textContent = '"Reduced stamping shop downtime by 14.5% during assembly trials."';
+                } else if (currentEom === 'Marcus Johnson') {
+                    document.getElementById('eom-role').textContent = 'Plant Manager';
+                    document.getElementById('eom-quote').textContent = '"Coordinated cross-functional transition for Munich Engine Hub platform."';
+                } else {
+                    document.getElementById('eom-role').textContent = 'Valued Team Member';
+                    document.getElementById('eom-quote').textContent = '"Recognized for outstanding contribution and executive nomination."';
+                }
+            }
+        });
+
+        function launchMFG() {
+            window.location.href = 'AutoMFG/index.html';
+        }
+
+        function closeAlert() {
+            document.getElementById('alertOverlay').style.display = 'none';
+        }
+    </script>
+    <div class="cursor-glow" id="glow"></div>
+    <script>
+        const glow = document.getElementById('glow');
+        if (glow) window.addEventListener('mousemove', e => {
+            glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+    </script>
+</body>
+</html>
