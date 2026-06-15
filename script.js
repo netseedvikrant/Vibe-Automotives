@@ -89,11 +89,11 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 // Modal logic for Corporate Login
 const modal = document.getElementById('loginModal');
-const openBtn = document.getElementById('openLoginBtn');
+const openBtns = [document.getElementById('openLoginBtn'), document.getElementById('navbarLoginBtn')];
 const closeBtn = document.querySelector('.close-modal');
 
-if (openBtn && modal && closeBtn) {
-    openBtn.addEventListener('click', (e) => {
+if (modal && closeBtn) {
+    const showModal = (e) => {
         e.preventDefault();
         modal.style.display = 'flex';
         // Allow a small delay to trigger the CSS transition/animation
@@ -101,6 +101,12 @@ if (openBtn && modal && closeBtn) {
             modal.classList.add('show');
         }, 10);
         document.body.style.overflow = 'hidden'; // Disable page scrolling
+    };
+
+    openBtns.forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', showModal);
+        }
     });
 
     const hideModal = () => {
