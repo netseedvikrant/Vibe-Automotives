@@ -9,9 +9,32 @@ import { supabase, isSupabaseConfigured, writeAuditLog } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { releaseFinishedGoodToLogistics } from '../lib/dbIntegration';
 
 const safeUUID = (id) =>
   id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ? id : null;
+
+const isMock = (str) => {
+  if (!str) return false;
+  const s = String(str).toUpperCase();
+  return (
+    s.includes('WBS3R9C57FK999001') ||
+    s.includes('WBS3R9C57FK999002') ||
+    s.includes('WBS3R9C57FK999010') ||
+    s.includes('BMW-M4-DOOR-LH') ||
+    s.includes('WO-2024-0001') ||
+    s.includes('WO-2024-0003') ||
+    s.includes('WO-20260520-0001') ||
+    s.includes('WO-20260521-0005') ||
+    s.includes('CP-001') ||
+    s.includes('SURFACE SCRATCH') ||
+    s.includes('MATERIAL CRACK') ||
+    s.includes('MOCKREWORK') ||
+    s.includes('MOCKSCRAP') ||
+    s.includes('SAMPLEREWORK') ||
+    s.includes('DEMOREWORK')
+  );
+};
 
 const TEST_ITEMS = [
   { key: 'engine', label: 'Engine Performance', unit: 'kW', target: 300 },
@@ -84,6 +107,45 @@ export default function EOLTesting() {
   const [certData, setCertData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [recentTests, setRecentTests] = useState([]);
+  const [awaitingVins, setAwaitingVins] = useState([]);
+
+  const fetchAwaitingVins = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data: insps } = await supabase
+        .from('quality_inspections')
+        .select('*')
+        .eq('result', 'pass');
+
+      const { data: wos } = await supabase
+        .from('work_orders')
+        .select('*');
+
+      const { data: eolRuns } = await supabase
+        .from('eol_test_runs')
+        .select('vin');
+
+      const testedVins = new Set((eolRuns || []).map(r => r.vin).filter(Boolean));
+      const awaiting = [];
+      const seen = new Set();
+
+      (insps || []).forEach(insp => {
+        const matchingWo = (wos || []).find(w => w.wo_number === insp.wo_number);
+        const vin = matchingWo?.vin || insp.wo_number;
+        if (!testedVins.has(vin) && !seen.has(vin) && !isMock(vin) && !isMock(matchingWo?.part_number)) {
+          seen.add(vin);
+          awaiting.push({
+            vin,
+            model: matchingWo?.part_number || 'AutoRND Item'
+          });
+        }
+      });
+
+      setAwaitingVins(awaiting);
+    } catch (e) {
+      console.warn('[EOL] fetchAwaitingVins failed:', e.message);
+    }
+  };
 
   const fetchRecentTests = async () => {
     if (!isSupabaseConfigured()) return;
@@ -116,7 +178,6 @@ export default function EOLTesting() {
         if (flatData && flatData.length > 0) {
           const vins = [...new Set(flatData.map(t => t.vin).filter(Boolean))];
           
-          // Fetch vin_units
           const { data: vinUnits } = await supabase
             .from('vin_units')
             .select('*')
@@ -125,7 +186,6 @@ export default function EOLTesting() {
           const vinMap = vinUnits ? Object.fromEntries(vinUnits.map(v => [v.vin, v])) : {};
           const partNumbers = [...new Set((vinUnits || []).map(v => v.part_number).filter(Boolean))];
           
-          // Fetch parts
           const { data: parts } = await supabase
             .from('part_master')
             .select('*')
@@ -149,18 +209,38 @@ export default function EOLTesting() {
         }
       }
 
-      if (data) setRecentTests(data.map((t) => ({
-        id: t.eol_run_id,
-        vin: t.vin,
-        model: t.vin_units?.part_master?.model || '—',
-        variant: t.vin_units?.part_master?.variant || '—',
-        date: t.tested_at?.slice(0, 10) || '—',
-        overallResult: (t.overall_result || 'unknown').toUpperCase(),
-      })));
+      if (data) {
+        const clean = data.filter(t => !isMock(t.vin) && !isMock(t.vin_units?.part_number));
+        setRecentTests(clean.map((t) => ({
+          id: t.eol_run_id,
+          vin: t.vin,
+          model: t.vin_units?.part_master?.model || '—',
+          variant: t.vin_units?.part_master?.variant || '—',
+          date: t.tested_at?.slice(0, 10) || '—',
+          overallResult: (t.overall_result || 'unknown').toUpperCase(),
+        })));
+      }
     } catch (err) { console.warn('[EOL] fetch failed:', err.message); }
   };
 
-  useEffect(() => { fetchRecentTests(); }, []);
+  useEffect(() => {
+    fetchRecentTests();
+    fetchAwaitingVins();
+
+    const channel = supabase
+      .channel('eol_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'eol_test_runs' }, () => {
+        fetchRecentTests();
+        fetchAwaitingVins();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quality_inspections' }, fetchAwaitingVins)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_orders' }, fetchAwaitingVins)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const vinForm = useForm({ resolver: zodResolver(vinSchema) });
   const testForm = useForm({ resolver: zodResolver(testSchema) });
@@ -211,13 +291,33 @@ export default function EOLTesting() {
       }
 
       if (error || !vinRow) {
+        const matchedAwaiting = awaitingVins.find(a => a.vin === data.vin);
+        if (matchedAwaiting) {
+          const partNo = matchedAwaiting.model || 'BMW-M4-DOOR-LH';
+          const isM4 = partNo.toLowerCase().includes('m4');
+          setVinMeta({
+            model: isM4 ? 'BMW M4 Competition' : (partNo.toLowerCase().includes('3-chassis') ? 'BMW 3 Series' : partNo),
+            variant: isM4 ? 'Competition' : 'Sedan',
+            part_number: partNo
+          });
+          setScannedVIN(data.vin);
+          setPhase('test');
+          setLoading(false);
+          toast.success(`VIN ${data.vin} confirmed from awaiting queue`);
+          return;
+        }
+
         toast.error('VIN not found in system. Ensure it is registered in vin_units.');
         setLoading(false);
         return;
       }
-      setVinMeta({ model: vinRow.part_master?.model || '—', variant: vinRow.part_master?.variant || '—' });
+      setVinMeta({
+        model: vinRow.part_master?.model || '—',
+        variant: vinRow.part_master?.variant || '—',
+        part_number: vinRow.part_number
+      });
     } else {
-      setVinMeta({ model: 'BMW M4', variant: 'Competition' });
+      setVinMeta({ model: 'AutoRND Item', variant: 'Prototype' });
     }
     setScannedVIN(data.vin);
     setPhase('test');
@@ -239,26 +339,45 @@ export default function EOLTesting() {
 
     try {
       if (isSupabaseConfigured()) {
-        const { data: run, error: runErr } = await supabase.from('eol_test_runs').insert({
-          vin: scannedVIN,
-          run_no: runNo,
-          overall_result: overall,
-          tested_by: safeUUID(user?.id),  // ✅ FIXED: safeUUID guard
-          tested_at: new Date().toISOString(),
-        }).select().single();
-        if (runErr) throw runErr;
-
-        if (run) {
-          const { error: resErr } = await supabase.from('eol_test_results').insert(
-            results.map((r) => ({ eol_run_id: run.eol_run_id, test_item: r.key, measured_value: String(r.measured), result: r.passed ? 'pass' : 'fail' }))
-          );
-          if (resErr) throw resErr;
-          if (overall === 'pass') {
-            await supabase.from('eol_certificates').insert({ eol_certificate_no: certNo, eol_run_id: run.eol_run_id, certificate_link: certNo, issued_at: new Date().toISOString() });
-            await supabase.from('vin_units').update({ current_status: 'released' }).eq('vin', scannedVIN);
+        try {
+          // A. Ensure VIN exists in vin_units to prevent foreign key violations
+          const partNumber = vinMeta.part_number || (scannedVIN.includes('M4') ? 'BMW-M4-DOOR-LH' : 'BMW-3-CHASSIS');
+          const { error: vinErr } = await supabase.from('vin_units').upsert({
+            vin: scannedVIN,
+            part_number: partNumber,
+            current_status: overall === 'pass' ? 'quality_passed' : 'quality_failed'
+          }, { onConflict: 'vin' });
+          
+          if (vinErr) {
+            console.warn('[EOL] vin_units upsert error:', vinErr);
+            throw vinErr;
           }
+
+          // B. Create eol_test_runs entry
+          const { data: run, error: runErr } = await supabase.from('eol_test_runs').insert({
+            vin: scannedVIN,
+            run_no: runNo,
+            overall_result: overall,
+            tested_by: safeUUID(user?.id),  // ✅ FIXED: safeUUID guard
+            tested_at: new Date().toISOString(),
+          }).select().single();
+          if (runErr) throw runErr;
+
+          if (run) {
+            const { error: resErr } = await supabase.from('eol_test_results').insert(
+              results.map((r) => ({ eol_run_id: run.eol_run_id, test_item: r.key, measured_value: String(r.measured), result: r.passed ? 'pass' : 'fail' }))
+            );
+            if (resErr) throw resErr;
+            if (overall === 'pass') {
+              await supabase.from('eol_certificates').insert({ eol_certificate_no: certNo, eol_run_id: run.eol_run_id, certificate_link: certNo, issued_at: new Date().toISOString() });
+              await releaseFinishedGoodToLogistics(scannedVIN);
+            }
+          }
+          writeAuditLog(safeUUID(user?.id), 'eol_test_runs', 'insert', { vin: scannedVIN, overall_result: overall });
+        } catch (dbErr) {
+          console.warn('Database persistence failed, proceeding with local memory:', dbErr);
+          toast.error(`DB Sync failed (${dbErr.message || 'RLS policy'}). Test results saved locally.`, { duration: 5000 });
         }
-        writeAuditLog(safeUUID(user?.id), 'eol_test_runs', 'insert', { vin: scannedVIN, overall_result: overall });
       }
 
       const cd = { certNo, vin: scannedVIN, model: vinMeta.model, variant: vinMeta.variant, plant: user?.plant || 'Plant A', inspector: user?.name || 'Inspector', date: new Date().toLocaleDateString('en-GB'), runNo, results, overall };
@@ -307,16 +426,24 @@ export default function EOLTesting() {
               <label className="form-label">Scan or Enter VIN</label>
               <div style={{ position: 'relative' }}>
                 <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-text)' }} />
-                <input className="form-input" style={{ paddingLeft: 36, fontSize: 16, letterSpacing: '0.1em' }} placeholder="WBS3R9C57FK001" {...vinForm.register('vin')} autoFocus />
+                <input className="form-input" style={{ paddingLeft: 36, fontSize: 16, letterSpacing: '0.1em' }} placeholder="Enter VIN or select below..." {...vinForm.register('vin')} autoFocus />
               </div>
               {vinForm.formState.errors.vin && <span style={{ color: 'var(--red)', fontSize: 11 }}>{vinForm.formState.errors.vin.message}</span>}
             </div>
-            <div style={{ padding: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted-text)', marginBottom: 8 }}>Demo VINs</div>
-              {['WBS3R9C57FK001', 'WBS3R9C57FK002', 'WBS3R9C57FK003'].map((v) => (
-                <button key={v} type="button" className="btn btn-sm btn-outline" style={{ marginRight: 6, marginBottom: 4 }} onClick={() => vinForm.setValue('vin', v)}>{v}</button>
-              ))}
-            </div>
+            {awaitingVins.length === 0 ? (
+              <div style={{ padding: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)', textAlign: 'center', color: 'var(--muted-text)', fontSize: 11 }}>
+                No units ready for EOL testing.
+              </div>
+            ) : (
+              <div style={{ padding: 12, background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted-text)', marginBottom: 8 }}>Units Awaiting EOL</div>
+                {awaitingVins.map((item) => (
+                  <button key={item.vin} type="button" className="btn btn-sm btn-outline" style={{ marginRight: 6, marginBottom: 4 }} onClick={() => vinForm.setValue('vin', item.vin)}>
+                    {item.vin} ({item.model})
+                  </button>
+                ))}
+              </div>
+            )}
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ justifyContent: 'center' }}>{loading ? 'Verifying...' : 'Confirm VIN & Proceed'}</button>
           </form>
         </div>
@@ -404,26 +531,80 @@ export default function EOLTesting() {
         </div>
       )}
 
-      {/* History */}
-      <div className="card" style={{ marginTop: 24 }}>
-        <div className="card-header"><span className="card-title">Recent EOL Tests</span><button className="icon-btn" onClick={fetchRecentTests}><RefreshCw size={14} /></button></div>
-        <div className="table-wrapper">
-          <table>
-            <thead><tr><th>VIN</th><th>Model</th><th>Variant</th><th>Date</th><th>Result</th></tr></thead>
-            <tbody>
-              {recentTests.length === 0
-                ? <tr><td colSpan={5} style={{ textAlign: 'center', padding: '24px 0', fontFamily: 'var(--font-heading)', fontSize: 11, color: 'var(--muted-text)' }}>No tests recorded</td></tr>
-                : recentTests.map((t) => (
-                  <tr key={t.id}>
-                    <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)', fontSize: 12 }}>{t.vin}</td>
-                    <td style={{ fontFamily: 'var(--font-body)', fontSize: 12 }}>{t.model}</td>
-                    <td style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-secondary)' }}>{t.variant}</td>
-                    <td style={{ fontFamily: 'var(--font-heading)', fontSize: 11, color: 'var(--text-secondary)' }}>{t.date}</td>
-                    <td><span className={`badge ${t.overallResult === 'PASS' ? 'badge-green' : 'badge-red'}`}>{t.overallResult}</span></td>
+      {/* History & Logistics Release */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 20, marginTop: 24 }}>
+        {/* Recent EOL Tests Card */}
+        <div className="card">
+          <div className="card-header"><span className="card-title">Recent EOL Tests</span><button className="icon-btn" onClick={fetchRecentTests}><RefreshCw size={14} /></button></div>
+          <div className="table-wrapper">
+            <table>
+              <thead><tr><th>VIN</th><th>Model</th><th>Variant</th><th>Date</th><th>Result</th></tr></thead>
+              <tbody>
+                {recentTests.length === 0
+                  ? <tr><td colSpan={5} style={{ textAlign: 'center', padding: '24px 0', fontFamily: 'var(--font-heading)', fontSize: 11, color: 'var(--muted-text)' }}>No certificates generated yet.</td></tr>
+                  : recentTests.map((t) => (
+                    <tr key={t.id}>
+                      <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)', fontSize: 12 }}>{t.vin}</td>
+                      <td style={{ fontFamily: 'var(--font-body)', fontSize: 12 }}>{t.model}</td>
+                      <td style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-secondary)' }}>{t.variant}</td>
+                      <td style={{ fontFamily: 'var(--font-heading)', fontSize: 11, color: 'var(--text-secondary)' }}>{t.date}</td>
+                      <td><span className={`badge ${t.overallResult === 'PASS' ? 'badge-green' : 'badge-red'}`}>{t.overallResult}</span></td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Finished Goods Release & Logistics Status Card */}
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Finished Goods Release &amp; Logistics Status</span>
+          </div>
+          <div className="table-wrapper" style={{ maxHeight: 320, overflowY: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>VIN</th>
+                  <th>Certificate</th>
+                  <th>Logistics</th>
+                  <th>Rework loops</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTests.filter(t => t.overallResult === 'PASS').map((t) => {
+                  const certNo = `EOL-${t.vin}-1`;
+                  const loops = recentTests.filter(rt => rt.vin === t.vin && rt.overallResult === 'FAIL').length;
+                  
+                  return (
+                    <tr key={t.vin}>
+                      <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)', fontSize: 11 }}>{t.vin}</td>
+                      <td>
+                        <div style={{ fontSize: 10, color: 'var(--green)' }}>✓ Generated</div>
+                        <div style={{ fontSize: 8, color: 'var(--muted-text)' }}>{certNo}</div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: 10, color: 'var(--bmw-blue)' }}>Pending Dispatch</div>
+                        <div style={{ fontSize: 8, color: 'var(--muted-text)' }}>Shipping req: Sent</div>
+                      </td>
+                      <td>
+                        <span className={`badge ${loops > 0 ? 'badge-amber' : 'badge-gray'}`}>
+                          {loops > 0 ? `${loops} Loop(s)` : 'No Rework'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {recentTests.filter(t => t.overallResult === 'PASS').length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)', fontSize: 11 }}>
+                      No certificates generated yet.
+                    </td>
                   </tr>
-                ))}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

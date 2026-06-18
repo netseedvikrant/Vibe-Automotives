@@ -136,4 +136,31 @@ CREATE POLICY "vin_units_update" ON vin_units FOR UPDATE USING (true);
 
 ALTER TABLE part_master ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "part_master_select" ON part_master;
+DROP POLICY IF EXISTS "part_master_insert" ON part_master;
+DROP POLICY IF EXISTS "part_master_update" ON part_master;
+DROP POLICY IF EXISTS "part_master_delete" ON part_master;
 CREATE POLICY "part_master_select" ON part_master FOR SELECT USING (true);
+CREATE POLICY "part_master_insert" ON part_master FOR INSERT WITH CHECK (true);
+CREATE POLICY "part_master_update" ON part_master FOR UPDATE USING (true);
+CREATE POLICY "part_master_delete" ON part_master FOR DELETE USING (true);
+
+-- ── 15. PLANTS & PRODUCTION LINES ──────────────────────────────
+ALTER TABLE plants ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "plants_select" ON plants;
+DROP POLICY IF EXISTS "plants_insert" ON plants;
+DROP POLICY IF EXISTS "plants_update" ON plants;
+DROP POLICY IF EXISTS "plants_delete" ON plants;
+CREATE POLICY "plants_select" ON plants FOR SELECT USING (true);
+CREATE POLICY "plants_insert" ON plants FOR INSERT WITH CHECK (true);
+CREATE POLICY "plants_update" ON plants FOR UPDATE USING (true);
+CREATE POLICY "plants_delete" ON plants FOR DELETE USING (true);
+
+ALTER TABLE production_lines ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "production_lines_select" ON production_lines;
+DROP POLICY IF EXISTS "production_lines_insert" ON production_lines;
+DROP POLICY IF EXISTS "production_lines_update" ON production_lines;
+DROP POLICY IF EXISTS "production_lines_delete" ON production_lines;
+CREATE POLICY "production_lines_select" ON production_lines FOR SELECT USING (true);
+CREATE POLICY "production_lines_insert" ON production_lines FOR INSERT WITH CHECK (true);
+CREATE POLICY "production_lines_update" ON production_lines FOR UPDATE USING (true);
+CREATE POLICY "production_lines_delete" ON production_lines FOR DELETE USING (true);

@@ -5,30 +5,104 @@ import {
   LayoutDashboard, ClipboardList, Layers, Activity, Wrench,
   ArrowLeftRight, AlertTriangle, Shield, Cpu, TestTube,
   BarChart3, Settings, ChevronLeft, ChevronRight, LogOut, Menu, X,
-  Bell, WifiOff, CheckCheck, Clock, Zap, Award,
+  Bell, WifiOff, CheckCheck, Clock, Zap, Award, Users, FileText,
+  TrendingUp, Package, Truck, Radio, Eye, GitMerge,
 } from 'lucide-react';
-import { useAuthStore, ROLE_PERMISSIONS } from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 import { useNotifications } from '../providers/NotificationProvider';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { syncOfflineQueue } from '../lib/offlineSync';
 import toast from 'react-hot-toast';
 
-const NAV_ITEMS = [
-  { id: 'ceo_dashboard', label: 'CEO Executive Dashboard', path: '/ceo-dashboard', icon: Award },
-  { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { id: 'production_planning', label: 'Production Planning', path: '/production-planning', icon: ClipboardList },
-  { id: 'work_orders', label: 'Work Orders', path: '/work-orders', icon: Layers },
-  { id: 'assembly_line', label: 'Assembly & Takt', path: '/assembly-line', icon: Activity },
-  { id: 'tooling', label: 'Tooling & Equipment', path: '/tooling', icon: Wrench },
-  { id: 'shift_handover', label: 'Shift Handover', path: '/shift-handover', icon: ArrowLeftRight },
-  { id: 'scrap_rework', label: 'Scrap & Rework', path: '/scrap-rework', icon: AlertTriangle },
-  { id: 'quality_gate', label: 'Quality Gate', path: '/quality-gate', icon: Shield },
-  { id: 'maintenance', label: 'Maintenance', path: '/maintenance', icon: Cpu },
-  { id: 'eol', label: 'EOL Testing', path: '/eol-testing', icon: TestTube },
-  { id: 'oee', label: 'OEE Dashboard', path: '/oee', icon: BarChart3 },
-  { id: 'admin', label: 'Admin Panel', path: '/admin', icon: Settings },
-];
+// ── Role-specific navigation definitions ────────────────────────
+// Each role gets a curated list of nav items relevant to their workflow
+const ROLE_NAV = {
+  sys_admin: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'admin', label: 'Users & Roles', path: '/admin', icon: Users },
+    { id: 'production_planning', label: 'Master Config', path: '/admin', icon: Settings },
+    { id: 'oee', label: 'Audit Logs', path: '/admin', icon: FileText },
+    { id: 'admin', label: 'Integration Monitor', path: '/admin', icon: GitMerge },
+  ],
+  plant_manager: [
+    { id: 'dashboard', label: 'Executive Dashboard', path: '/dashboard', icon: Award },
+    { id: 'oee', label: 'OEE', path: '/oee', icon: BarChart3 },
+    { id: 'production_planning', label: 'Production Summary', path: '/production-planning', icon: TrendingUp },
+    { id: 'quality_gate', label: 'Quality Escalations', path: '/quality-gate', icon: Shield },
+    { id: 'shift_handover', label: 'Shift Reports', path: '/shift-handover', icon: FileText },
+    { id: 'scrap_rework', label: 'Supply Chain Impact', path: '/scrap-rework', icon: Truck },
+  ],
+  production_manager: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'production_planning', label: 'Plan Approvals', path: '/production-planning', icon: ClipboardList },
+    { id: 'work_orders', label: 'Work Orders', path: '/work-orders', icon: Layers },
+    { id: 'quality_gate', label: 'Quality Holds', path: '/quality-gate', icon: Shield },
+    { id: 'shift_handover', label: 'Shift Handover', path: '/shift-handover', icon: ArrowLeftRight },
+    { id: 'oee', label: 'OEE', path: '/oee', icon: BarChart3 },
+  ],
+  production_planner: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'production_planning', label: 'R&D Inputs', path: '/production-planning', icon: Package },
+    { id: 'production_planning', label: 'Planning', path: '/production-planning', icon: ClipboardList },
+    { id: 'production_planning', label: 'Capacity Check', path: '/production-planning', icon: Activity },
+    { id: 'production_planning', label: 'Material Check', path: '/production-planning', icon: Layers },
+    { id: 'work_orders', label: 'Work Orders', path: '/work-orders', icon: Layers },
+  ],
+  shift_supervisor: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'assembly_line', label: 'Live Floor', path: '/assembly-line', icon: Radio },
+    { id: 'assembly_line', label: 'Andon', path: '/assembly-line', icon: AlertTriangle },
+    { id: 'maintenance', label: 'Maintenance', path: '/maintenance', icon: Cpu },
+    { id: 'scrap_rework', label: 'Scrap / Rework', path: '/scrap-rework', icon: AlertTriangle },
+    { id: 'shift_handover', label: 'Shift Handover', path: '/shift-handover', icon: ArrowLeftRight },
+  ],
+  line_leader: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'assembly_line', label: 'My Line', path: '/assembly-line', icon: Activity },
+    { id: 'work_orders', label: 'Work Orders', path: '/work-orders', icon: Layers },
+    { id: 'tooling', label: 'Tooling', path: '/tooling', icon: Wrench },
+    { id: 'scrap_rework', label: 'Defects', path: '/scrap-rework', icon: AlertTriangle },
+  ],
+  machine_operator: [
+    { id: 'dashboard', label: 'My Station', path: '/dashboard', icon: Cpu },
+    { id: 'work_orders', label: 'My Work Order', path: '/work-orders', icon: Layers },
+    { id: 'assembly_line', label: 'Assembly & Takt', path: '/assembly-line', icon: Activity },
+  ],
+  quality_inspector: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'quality_gate', label: 'Quality Gate', path: '/quality-gate', icon: Shield },
+    { id: 'scrap_rework', label: 'Defect Register', path: '/scrap-rework', icon: AlertTriangle },
+    { id: 'scrap_rework', label: 'Scrap / Rework', path: '/scrap-rework', icon: Wrench },
+    { id: 'eol', label: 'EOL Testing', path: '/eol-testing', icon: TestTube },
+    { id: 'eol', label: 'Certificates', path: '/eol-testing', icon: Award },
+  ],
+  maintenance_tech: [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'maintenance', label: 'Breakdown Tickets', path: '/maintenance', icon: AlertTriangle },
+    { id: 'maintenance', label: 'Machine Status', path: '/maintenance', icon: Cpu },
+    { id: 'maintenance', label: 'Spare Requests', path: '/maintenance', icon: Package },
+    { id: 'tooling', label: 'Tool Calibration', path: '/tooling', icon: Wrench },
+    { id: 'maintenance', label: 'Repair Logs', path: '/maintenance', icon: FileText },
+  ],
+  ceo: [
+    { id: 'ceo_dashboard', label: 'CEO Executive Dashboard', path: '/ceo-dashboard', icon: Award },
+    { id: 'dashboard', label: 'Command Center', path: '/dashboard', icon: LayoutDashboard },
+    { id: 'oee', label: 'OEE Dashboard', path: '/oee', icon: BarChart3 },
+    { id: 'production_planning', label: 'Production Planning', path: '/production-planning', icon: ClipboardList },
+    { id: 'work_orders', label: 'Work Orders', path: '/work-orders', icon: Layers },
+    { id: 'admin', label: 'Admin Panel', path: '/admin', icon: Settings },
+  ],
+};
+
+// Deduplicate nav items by path (some roles have same path for multiple labels)
+const getNavForRole = (role) => {
+  const items = ROLE_NAV[role] || [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  ];
+  // Keep all items — allow duplicates for same-path different labels (tabs within a page)
+  return items;
+};
 
 const SOURCE_ICONS = {
   andon: AlertTriangle,
@@ -137,124 +211,72 @@ function NotificationDropdown({ onClose }) {
 
 export default function AppShell({ children }) {
   const { user, logout } = useAuthStore();
-  const { sidebarCollapsed, toggleSidebar, selectedPlant, setPlant, andonAlerts, isOnline, setOnline, toasts, raiseAndon, resolveAndon, setAndonAlerts } = useAppStore();
+  const { sidebarCollapsed, toggleSidebar, selectedPlant, setPlant, andonAlerts, isOnline, setOnline, toasts, raiseAndon, resolveAndon, setAndonAlerts, fetchAndons } = useAppStore();
   const activeShift = useActiveShift();
   const notifCtx = useNotifications();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const hasRedirectedAfterLogout = useRef(false);
 
-  const permissions = ROLE_PERMISSIONS[user?.role] ?? [];
-  const allowedNav = NAV_ITEMS.filter((item) => permissions.includes(item.id));
-  const activeAlerts = andonAlerts.filter((a) => a.status === 'Open' || a.status === 'open');
+  // Role-aware navigation — each role gets curated sidebar items
+  const allowedNav = getNavForRole(user?.role);
+  const activeAlerts = andonAlerts.filter((a) => a.status === 'Open' || a.status === 'open' || a.status === 'active' || a.status === 'Active');
   const unreadCount = notifCtx?.unreadCount || 0;
 
-  // Load and sync Andon events from Supabase on mount
+  // Load and sync Andon events from Supabase on mount with realtime subscriptions
   useEffect(() => {
-    const getResolvedAndonIds = () => {
-      try {
-        return JSON.parse(localStorage.getItem('automfg_resolved_andon_ids')) || [];
-      } catch {
-        return [];
-      }
-    };
-
-    const loadAndonEvents = async () => {
-      const resolvedIds = getResolvedAndonIds();
+    let channel;
+    
+    const initAndonSync = async () => {
+      const { getAndonTableName, mapAndonFromDb } = await import('../lib/supabase');
+      const tableName = await getAndonTableName();
       
-      // Update local mock store first so resolved state is visible instantly
-      const initialAlerts = andonAlerts.map(a => resolvedIds.includes(a.id) ? { ...a, status: 'Resolved' } : a);
-      setAndonAlerts(initialAlerts);
-
+      // Perform initial fetch using the unified fetch function
+      await fetchAndons();
+      
       if (!isSupabaseConfigured()) return;
-
-      try {
-        const { data, error } = await supabase.from('andon_events').select('*');
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const formatted = data.map((item) => {
-            const isResolved = item.status === 'resolved' || resolvedIds.includes(item.andon_id);
-            return {
-              id: item.andon_id,
-              line: 'Line 1',
-              station: item.station_id || (item.issue_type === 'machine_issue' ? 'Station 3' : 'Station 1'),
-              type: item.issue_type,
-              issue_type: item.issue_type,
-              description: item.issue_type === 'machine_issue' ? 'Welding robot E-fault' : 'Door seal gaskets depleted',
-              severity: item.severity || 'medium',
-              time: new Date(item.raised_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-              status: isResolved ? 'Resolved' : item.status === 'acknowledged' ? 'Acknowledged' : 'Open',
-            };
-          });
-          setAndonAlerts(formatted);
-        } else {
-          // Seed the database with the initial two mock alerts so they have real UUIDs
-          const seedData = [
-            {
-              issue_type: 'machine_issue',
-              severity: 'high',
-              status: resolvedIds.includes('AND-001') ? 'resolved' : 'open',
-              raised_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-            },
-            {
-              issue_type: 'part_shortage',
-              severity: 'medium',
-              status: resolvedIds.includes('AND-002') ? 'resolved' : 'acknowledged',
-              raised_at: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
+      
+      // Subscribe to real-time changes
+      channel = supabase.channel('andon-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const mapped = mapAndonFromDb(payload.new, tableName);
+            if (['active', 'open', 'raised', 'ACTIVE', 'OPEN'].includes(mapped.status)) {
+              mapped.status = 'Open';
+              setAndonAlerts([mapped, ...useAppStore.getState().andonAlerts.filter(a => a.id !== mapped.id)]);
+              toast.error(`⚡ NEW ANDON: ${mapped.line} / ${mapped.station} - ${mapped.description}`, { duration: 6000 });
             }
-          ];
-          const { data: seeded, error: seedErr } = await supabase.from('andon_events').insert(seedData).select();
-          if (!seedErr && seeded) {
-            const formatted = seeded.map((item) => {
-              const isResolved = item.status === 'resolved' || resolvedIds.includes(item.andon_id);
-              return {
-                id: item.andon_id,
-                line: 'Line 1',
-                station: item.station_id || (item.issue_type === 'machine_issue' ? 'Station 3' : 'Station 1'),
-                type: item.issue_type,
-                issue_type: item.issue_type,
-                description: item.issue_type === 'machine_issue' ? 'Welding robot E-fault' : 'Door seal gaskets depleted',
-                severity: item.severity || 'medium',
-                time: new Date(item.raised_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-                status: isResolved ? 'Resolved' : item.status === 'acknowledged' ? 'Acknowledged' : 'Open',
-              };
-            });
-            setAndonAlerts(formatted);
+          } else if (payload.eventType === 'UPDATE') {
+            const mapped = mapAndonFromDb(payload.new, tableName);
+            const isResolved = mapped.status === 'resolved' || mapped.status === 'Resolved';
+            setAndonAlerts(useAppStore.getState().andonAlerts.map(a => 
+              a.id === mapped.id 
+                ? { 
+                    ...a, 
+                    status: isResolved ? 'Resolved' : mapped.status === 'acknowledged' ? 'Acknowledged' : 'Open',
+                    resolved_at: mapped.resolved_at,
+                    resolved_by: mapped.resolved_by,
+                  } 
+                : a
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            const id = tableName === 'andon_alerts' ? payload.old.id : payload.old.andon_id;
+            setAndonAlerts(useAppStore.getState().andonAlerts.filter(a => a.id !== id));
           }
-        }
-      } catch (err) {
-        console.warn('[AppShell] Failed to load/seed andon events:', err.message);
-      }
+        })
+        .subscribe();
     };
 
-    loadAndonEvents();
-  }, []);
+    initAndonSync();
 
-  // Realtime andon subscription — keeps topbar banner live across all sessions
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    const channel = supabase.channel('andon-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'andon_events' }, (payload) => {
-        if (payload.eventType === 'INSERT' && payload.new?.status === 'open') {
-          raiseAndon({
-            id: payload.new.andon_id,
-            line: 'Line 1',
-            station: payload.new.station_id || 'Unknown',
-            type: payload.new.issue_type,
-            issue_type: payload.new.issue_type,
-            description: payload.new.issue_type,
-            severity: payload.new.severity,
-            time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-            status: 'Open',
-          });
-        } else if (payload.eventType === 'UPDATE' && payload.new?.status === 'resolved') {
-          resolveAndon(payload.new.andon_id);
-        }
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   // Online / offline detection
@@ -297,8 +319,19 @@ export default function AppShell({ children }) {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
-    window.location.href = '/index.html';
+    if (isLoggingOut) return;
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      if (!hasRedirectedAfterLogout.current) {
+        hasRedirectedAfterLogout.current = true;
+        navigate('/login', { replace: true });
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const initials = user?.name?.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() || 'AU';
@@ -341,14 +374,23 @@ export default function AppShell({ children }) {
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: 11, color: 'var(--amber)', letterSpacing: '0.12em' }}>OFFLINE</span>
             </div>
           )}
-          {activeAlerts.length > 0 && (
-            <div className="andon-banner" style={{ marginBottom: 0, padding: '4px 12px', flex: 1, cursor: 'pointer' }} onClick={() => navigate('/assembly-line')}>
-              <AlertTriangle size={14} />
-              <span className="andon-banner-text">
-                {activeAlerts.length} ACTIVE ANDON ALERT{activeAlerts.length > 1 ? 'S' : ''} — {activeAlerts[0].line} / {activeAlerts[0].station}: {activeAlerts[0].description}
-              </span>
-            </div>
-          )}
+          {activeAlerts.length > 0 && (() => {
+            // Role-contextual Andon banner behavior
+            const role = user?.role;
+            const bannerPath = role === 'maintenance_tech' ? '/maintenance'
+              : role === 'machine_operator' ? '/assembly-line'
+              : role === 'shift_supervisor' ? '/assembly-line'
+              : role === 'sys_admin' ? '/admin'
+              : '/assembly-line';
+            return (
+              <div className="andon-banner" style={{ marginBottom: 0, padding: '4px 12px', flex: 1, cursor: 'pointer' }} onClick={() => navigate(bannerPath)}>
+                <AlertTriangle size={14} />
+                <span className="andon-banner-text">
+                  {activeAlerts.length} ACTIVE ANDON ALERT{activeAlerts.length > 1 ? 'S' : ''} — {activeAlerts[0].line} / {activeAlerts[0].station}: {activeAlerts[0].description}
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="topbar-right">
@@ -381,11 +423,19 @@ export default function AppShell({ children }) {
           </div>
 
           <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 4px' }} />
-          <div className="user-chip" onClick={handleLogout} title="Click to logout">
+          <div 
+            className="user-chip" 
+            onClick={isLoggingOut ? null : handleLogout} 
+            title="Click to logout"
+            style={{ 
+              pointerEvents: isLoggingOut ? 'none' : 'auto', 
+              opacity: isLoggingOut ? 0.6 : 1 
+            }}
+          >
             <div className="user-avatar">{initials}</div>
             <div className="user-info">
               <span className="user-name">{user?.name}</span>
-              <span className="user-role">{user?.roleLabel}</span>
+              <span className="user-role">{user?.roleLabel} · {user?.department || user?.plant}</span>
             </div>
             <LogOut size={12} style={{ color: 'var(--muted-text)', marginLeft: 4 }} />
           </div>
@@ -402,11 +452,11 @@ export default function AppShell({ children }) {
           {!sidebarCollapsed && (
             <div className="nav-section-label">Modules</div>
           )}
-          {allowedNav.map((item) => {
+          {allowedNav.map((item, index) => {
             const Icon = item.icon;
             return (
               <NavLink
-                key={item.id}
+                key={`${item.id}-${index}`}
                 to={item.path}
                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 title={sidebarCollapsed ? item.label : ''}
@@ -419,7 +469,15 @@ export default function AppShell({ children }) {
           })}
         </div>
         <div className="sidebar-footer">
-          <button className="sidebar-toggle" onClick={handleLogout}>
+          <button 
+            className="sidebar-toggle" 
+            onClick={handleLogout} 
+            disabled={isLoggingOut}
+            style={{ 
+              pointerEvents: isLoggingOut ? 'none' : 'auto', 
+              opacity: isLoggingOut ? 0.6 : 1 
+            }}
+          >
             <LogOut size={14} />
             {!sidebarCollapsed && <span>Logout</span>}
           </button>

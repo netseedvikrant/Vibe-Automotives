@@ -12,6 +12,28 @@ import { useAuthStore } from '../store/authStore';
 const safeUUID = (id) =>
   id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ? id : null;
 
+const isMock = (str) => {
+  if (!str) return false;
+  const s = String(str).toUpperCase();
+  return (
+    s.includes('WBS3R9C57FK999001') ||
+    s.includes('WBS3R9C57FK999002') ||
+    s.includes('WBS3R9C57FK999010') ||
+    s.includes('BMW-M4-DOOR-LH') ||
+    s.includes('WO-2024-0001') ||
+    s.includes('WO-2024-0003') ||
+    s.includes('WO-20260520-0001') ||
+    s.includes('WO-20260521-0005') ||
+    s.includes('CP-001') ||
+    s.includes('SURFACE SCRATCH') ||
+    s.includes('MATERIAL CRACK') ||
+    s.includes('MOCKREWORK') ||
+    s.includes('MOCKSCRAP') ||
+    s.includes('SAMPLEREWORK') ||
+    s.includes('DEMOREWORK')
+  );
+};
+
 const inspSchema = z.object({
   wo_number: z.string().min(1, 'WO required'),
   characteristic: z.string().min(1, 'Characteristic required'),
@@ -53,7 +75,7 @@ function AddInspectionModal({ onClose, onSaved, workOrders = [] }) {
         .from('quality_inspections')
         .insert({
           wo_number: data.wo_number,
-          control_plan_ref: 'CP-001',
+          control_plan_ref: 'CP-BOM',
           result,
           inspected_at: new Date().toISOString(),
           inspector_id: inspectorId, // ✅ FIXED: safeUUID guard
@@ -108,7 +130,7 @@ function AddInspectionModal({ onClose, onSaved, workOrders = [] }) {
                   {workOrders.map((w) => <option key={w.wo_number} value={w.wo_number}>{w.wo_number}</option>)}
                 </select>
               ) : (
-                <input className="form-input" placeholder="e.g. WO-2024-0001" {...register('wo_number')} required />
+                <input className="form-input" placeholder="Enter Work Order..." {...register('wo_number')} required />
               )}
               {errors.wo_number && <span style={{ color: 'var(--red)', fontSize: 11 }}>{errors.wo_number.message}</span>}
             </div>
@@ -189,11 +211,11 @@ function LogDefectModal({ onClose, onSaved, workOrders = [] }) {
                   {workOrders.map((w) => <option key={w.wo_number} value={w.wo_number}>{w.wo_number}</option>)}
                 </select>
               ) : (
-                <input className="form-input" placeholder="e.g. WO-2024-0001" {...register('wo_number')} required />
+                <input className="form-input" placeholder="Enter Work Order..." {...register('wo_number')} required />
               )}
               {errors.wo_number && <span style={{ color: 'var(--red)', fontSize: 11 }}>{errors.wo_number.message}</span>}
             </div>
-            <div className="form-group"><label className="form-label">Defect Type</label><input className="form-input" placeholder="e.g. Surface Scratch" {...register('defect_type')} />{errors.defect_type && <span style={{ color: 'var(--red)', fontSize: 11 }}>{errors.defect_type.message}</span>}</div>
+            <div className="form-group"><label className="form-label">Defect Type</label><input className="form-input" placeholder="Enter Defect Type..." {...register('defect_type')} />{errors.defect_type && <span style={{ color: 'var(--red)', fontSize: 11 }}>{errors.defect_type.message}</span>}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="form-group"><label className="form-label">Quantity</label><input className="form-input" type="number" {...register('qty')} /></div>
               <div className="form-group">
@@ -226,26 +248,38 @@ export default function QualityGate() {
   const fetchInspections = async () => {
     if (!isSupabaseConfigured()) return;
     const { data } = await supabase.from('quality_inspections').select('*, inspection_checks(*)').order('inspected_at', { ascending: false }).limit(50);
-    if (data) setInspections(data.map((i) => ({ ...i, checks: i.inspection_checks || [] })));
+    if (data) {
+      const clean = data.filter(i => !isMock(i.wo_number) && !isMock(i.control_plan_ref));
+      setInspections(clean.map((i) => ({ ...i, checks: i.inspection_checks || [] })));
+    }
   };
 
   const fetchDefects = async () => {
     if (!isSupabaseConfigured()) return;
     const { data } = await supabase.from('defect_records').select('*').order('logged_at', { ascending: false }).limit(50);
-    if (data) setDefects(data);
+    if (data) {
+      const clean = data.filter(d => !isMock(d.wo_number) && !isMock(d.defect_type));
+      setDefects(clean);
+    }
   };
 
   const fetchUaiApprovals = async () => {
     if (!isSupabaseConfigured()) return;
     // Join defect_records to see which defect it belongs to
     const { data } = await supabase.from('uai_approvals').select('*, defect_records(wo_number, defect_type, qty)').order('status');
-    if (data) setUaiApprovals(data);
+    if (data) {
+      const clean = data.filter(u => u.defect_records && !isMock(u.defect_records.wo_number) && !isMock(u.defect_records.defect_type));
+      setUaiApprovals(clean);
+    }
   };
 
   const fetchWorkOrders = async () => {
     if (!isSupabaseConfigured()) return;
-    const { data } = await supabase.from('work_orders').select('wo_number').order('created_at', { ascending: false });
-    if (data) setWorkOrders(data);
+    const { data } = await supabase.from('work_orders').select('wo_number, vin, part_number').order('created_at', { ascending: false });
+    if (data) {
+      const clean = data.filter(w => !isMock(w.wo_number) && !isMock(w.vin) && !isMock(w.part_number));
+      setWorkOrders(clean);
+    }
   };
 
   const fetchAll = async () => {
@@ -259,7 +293,21 @@ export default function QualityGate() {
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+
+    const channel = supabase
+      .channel('quality_realtime_gate')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quality_inspections' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'defect_records' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'uai_approvals' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'work_orders' }, fetchAll)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleUaiApprove = async (uaiId, currentStatus) => {
     if (!isSupabaseConfigured()) return;
@@ -349,7 +397,11 @@ export default function QualityGate() {
             <table>
               <thead><tr><th>Inspection ID</th><th>Work Order</th><th>Control Plan</th><th>Checks</th><th>Result</th><th>Inspected At</th></tr></thead>
               <tbody>
-                {loading ? <tr><td colSpan={6} style={{ textAlign: 'center' }}>Loading...</td></tr> : inspections.map((insp) => (
+                {loading ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center' }}>Loading...</td></tr>
+                ) : inspections.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>No inspection records available.</td></tr>
+                ) : inspections.map((insp) => (
                   <tr key={insp.inspection_id}>
                     <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)', fontSize: 13 }}>{insp.inspection_id?.slice(0, 8)}</td>
                     <td style={{ fontFamily: 'var(--font-heading)', fontSize: 12 }}>{insp.wo_number}</td>
@@ -379,7 +431,11 @@ export default function QualityGate() {
             <table>
               <thead><tr><th>Defect ID</th><th>Work Order</th><th>Defect Type</th><th>Qty</th><th>Disposition</th><th>Logged At</th></tr></thead>
               <tbody>
-                {loading ? <tr><td colSpan={6} style={{ textAlign: 'center' }}>Loading...</td></tr> : defects.map((def) => (
+                {loading ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center' }}>Loading...</td></tr>
+                ) : defects.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>No defects registered.</td></tr>
+                ) : defects.map((def) => (
                   <tr key={def.defect_id}>
                     <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)', fontSize: 13 }}>{def.defect_id?.slice(0, 8)}</td>
                     <td style={{ fontFamily: 'var(--font-heading)', fontSize: 12 }}>{def.wo_number}</td>
