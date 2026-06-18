@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIBE AUTOMOTIVES - Enterprise Staff Access</title>
+    <meta name="description" content="Secure direct entry portal for VIBE Automotives Staff and Executive Boardroom.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #05050a;
+            --primary: #00f0ff;
+            --primary-glow: rgba(0, 240, 255, 0.3);
+            --secondary: #0055ff;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(10, 10, 20, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-gold: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glow Background */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            overflow: hidden;
+            background: radial-gradient(circle at 10% 20%, rgba(0, 85, 255, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 40%);
+        }
+
+        .cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: -1;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.07), transparent 65%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease-out;
+            mix-blend-mode: screen;
+        }
+
+        /* Container & Modal Override styling to fit script.js expectations */
+        .login-wrapper {
+            width: 100%;
+            max-width: 480px;
+            padding: 2rem;
+            z-index: 10;
+        }
+
+        /* Override modal styling from default CSS to keep it permanently centered & visible */
+        #loginModal.modal {
+            position: relative !important;
+            display: flex !important;
+            background: transparent !important;
+            z-index: auto !important;
+            opacity: 1 !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            backdrop-filter: none !important;
+            pointer-events: auto !important;
+        }
+
+        .modal-content.glass-effect {
+            width: 100%;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            backdrop-filter: blur(25px) saturate(160%);
+            -webkit-backdrop-filter: blur(25px) saturate(160%);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.65), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            animation: cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Remove the close button representation on direct login screen since there's nowhere to close to */
+        .close-modal {
+            display: none !important;
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .modal-logo span {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #ffffff 30%, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.85rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+
+        .modal-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        form {
+            width: 100%;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+            width: 100%;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 0.6rem;
+            transition: color 0.3s ease;
+        }
+
+        .input-group input[type="text"],
+        .input-group input[type="password"],
+        .input-group input[type="email"] {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: rgba(5, 5, 10, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15),
+                        inset 0 2px 4px rgba(0, 0, 0, 0.4);
+            background: rgba(5, 5, 10, 0.8);
+        }
+
+        .input-group input:focus + label {
+            color: var(--primary);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+            color: var(--text-muted);
+            width: 100%;
+        }
+
+        .form-options label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .form-options label input {
+            accent-color: var(--primary);
+        }
+
+        .form-options a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .form-options a:hover {
+            color: var(--primary);
+        }
+
+        /* Buttons styling matching premium standard */
+        .btn-glow {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: #050505;
+            border: none;
+            border-radius: 12px;
+            padding: 1.1rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 25px rgba(0, 85, 255, 0.3);
+            text-transform: uppercase;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .btn-glow:hover::before {
+            left: 100%;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 240, 255, 0.45);
+            filter: brightness(1.1);
+        }
+
+        .btn-glow:active {
+            transform: translateY(0);
+        }
+
+        .btn-glow:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Error state notification */
+        #loginError {
+            width: 100%;
+            color: #ff4e4e;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: none;
+            padding: 0.8rem;
+            background: rgba(255, 78, 78, 0.1);
+            border: 1px solid rgba(255, 78, 78, 0.2);
+            border-radius: 10px;
+            line-height: 1.4;
+        }
+
+        /* Forgot Password modal dialog overrides */
+        #forgotPasswordModal.modal {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(5, 5, 8, 0.7) !important;
+            backdrop-filter: blur(15px) !important;
+            z-index: 9999 !important;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #forgotPasswordModal.modal.show {
+            opacity: 1;
+            display: flex !important;
+        }
+
+        #forgotPasswordModal .modal-content {
+            max-width: 450px;
+            margin: auto;
+        }
+
+        #forgotPasswordModal .close-forgot-modal {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        #forgotPasswordModal .close-forgot-modal:hover {
+            color: #fff;
+        }
+
+        /* Decorative Brand Footer on Login Screen */
+        .login-footer {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.25);
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        @keyframes cardFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Ambient Background effects -->
+    <div class="ambient-bg"></div>
+    <div id="glow" class="cursor-glow"></div>
+
+    <div class="login-wrapper">
+        <!-- Corporate Login Panel (Matches script.js selector) -->
+        <div id="loginModal" class="modal">
+            <div class="modal-content glass-effect">
+                <div class="modal-body">
+                    <div class="modal-logo">
+                        <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_modal)" />
+                            <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505" />
+                            <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_modal)" />
+                            <defs>
+                                <linearGradient id="paint0_linear_modal" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#00F0FF" />
+                                    <stop offset="1" stop-color="#0055FF" />
+                                </linearGradient>
+                                <linearGradient id="paint1_linear_modal" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#00F0FF" />
+                                    <stop offset="1" stop-color="#0055FF" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <span>VIBE AUTOMOTIVES</span>
+                    </div>
+                    
+                    <h3>Staff Gateway</h3>
+                    <p class="modal-subtitle">Enterprise Operating Platform Login</p>
+                    
+                    <form id="loginForm">
+                        <div id="loginError"></div>
+                        <div class="input-group">
+                            <label for="email">Email or Badge ID</label>
+                            <input type="text" id="email" required placeholder="Enter corporate email" autocomplete="off">
+                        </div>
+                        <div class="input-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" required placeholder="Enter password" autocomplete="off">
+                        </div>
+                        <div class="form-options">
+                            <label><input type="checkbox"> Remember access</label>
+                            <a href="#" class="forgot">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="btn-glow">Access Platform</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div id="forgotPasswordModal" class="modal" style="display: none;">
+            <div class="modal-content glass-effect">
+                <span class="close-forgot-modal close-modal">&times;</span>
+                <div class="modal-body">
+                    <div class="modal-logo">
+                        <svg width="40" height="40" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M50 0L100 25V75L50 100L0 75V25L50 0Z" fill="url(#paint0_linear_forgot)" />
+                            <path d="M50 20L80 35V65L50 80L20 65V35L50 20Z" fill="#050505" />
+                            <path d="M50 40L60 45V55L50 60L40 55V45L50 40Z" fill="url(#paint1_linear_forgot)" />
+                            <defs>
+                                <linearGradient id="paint0_linear_forgot" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#00F0FF" />
+                                    <stop offset="1" stop-color="#0055FF" />
+                                </linearGradient>
+                                <linearGradient id="paint1_linear_forgot" x1="40" y1="40" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#00F0FF" />
+                                    <stop offset="1" stop-color="#0055FF" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <span>VIBE AUTOMOTIVES</span>
+                    </div>
+                    <h3>Reset Portal Password</h3>
+                    <p class="modal-subtitle">Direct HR verification request</p>
+                    <form id="forgotForm">
+                        <div id="forgotSuccess" style="color: #00e5ff; font-size: 0.85rem; margin-bottom: 1.2rem; text-align: center; display: none; padding: 0.6rem; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 6px; line-height: 1.4;"></div>
+                        <div class="input-group">
+                            <label for="forgotName">Full Name</label>
+                            <input type="text" id="forgotName" required placeholder="Enter your full name">
+                        </div>
+                        <div class="input-group">
+                            <label for="forgotEmail">Corporate Email Address</label>
+                            <input type="email" id="forgotEmail" required placeholder="Enter your corporate email">
+                        </div>
+                        <button type="submit" class="btn-glow">Send Request to HR</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            <p>&copy; 2026 VIBE Automotives. Secured Enterprise Session.</p>
+        </div>
+    </div>
+
+    <!-- Supabase and standard handlers integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+    <script src="script.js?v=1.2"></script>
+    
+    <script>
+        // Custom background pointer glow follow logic
+        const glow = document.getElementById('glow');
+        if (glow) {
+            window.addEventListener('mousemove', e => {
+                glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+            });
+        }
+
+        // Forgot password modal dismiss hook to make sure login wrapper card is restored when closed
+        const forgotModal = document.getElementById('forgotPasswordModal');
+        const loginModal = document.getElementById('loginModal');
+        const closeForgotBtn = document.querySelector('.close-forgot-modal');
+
+        if (closeForgotBtn && forgotModal && loginModal) {
+            const restoreLogin = () => {
+                loginModal.style.display = 'flex';
+                loginModal.style.opacity = '1';
+            };
+
+            closeForgotBtn.addEventListener('click', restoreLogin);
+            
+            // Handle clicking overlay to close forgot password modal
+            forgotModal.addEventListener('click', (e) => {
+                if (e.target === forgotModal) {
+                    restoreLogin();
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
