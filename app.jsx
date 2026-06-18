@@ -20337,7 +20337,7 @@
 
 
 
-                                <Icons.Bell className="w-4 h-4 text-corp-accent"/>
+                                
 
 
 
@@ -41416,7 +41416,7 @@
 
 
 
-                                        <Icons.Bell className="text-corp-accent"/>
+                                        
 
 
 
@@ -54310,7 +54310,7 @@
                         }
                     }}
                 >
-                    <Icons.Bell className="w-3.5 h-3.5"/>
+
                     Notify Procurement
                 </button>
             );
@@ -98357,7 +98357,7 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
 
-                        <KPICard title="Expected Today" value={kpis.expectedToday} icon={Icons.Bell} colorClass="text-green-600" bgClass="bg-green-50" />
+                        <KPICard title="Expected Today" value={kpis.expectedToday} icon={Icons.Truck} colorClass="text-green-600" bgClass="bg-green-50" />
 
 
 
@@ -115819,71 +115819,7 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
 
-                                <button className="relative text-gray-400 hover:text-corp-accent transition-colors p-1">
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                    <Icons.Bell className="w-6 h-6" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-corp-danger border-2 border-white rounded-full"></span>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                </button>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                <div className="w-px h-6 bg-gray-200"></div>
 
 
 
