@@ -1,0 +1,5 @@
+node_modules/
+*.bak
+scratch_check.js
+search_docx.py
+seed_materials.js

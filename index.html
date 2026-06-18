@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+<html lang="en">
+
+
+
+
+
+
+
+<head>
+
+
+
+
+
+
+
+    <meta charset="UTF-8">
+
+
+
+
+
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  #scm-toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    max-width: 420px;
+  }
+  .scm-toast {
+    pointer-events: all;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #ffffff;
+    border-left: 4px solid #1a365d;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08);
+    padding: 16px 18px;
+    min-width: 300px;
+    animation: scm-toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+  }
+  .scm-toast.scm-toast-out {
+    animation: scm-toast-out 0.3s ease forwards;
+  }
+  .scm-toast-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    color: #1a365d;
+  }
+  .scm-toast-body {
+    flex: 1;
+    font-size: 14px;
+    color: #1e293b;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+  .scm-toast-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 2px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+    margin-top: -2px;
+  }
+  .scm-toast-close:hover {
+    color: #1e293b;
+    background: #f1f5f9;
+  }
+  .scm-toast.success { border-color: #16a34a; }
+  .scm-toast.success .scm-toast-icon { color: #16a34a; }
+  .scm-toast.error   { border-color: #dc2626; }
+  .scm-toast.error   .scm-toast-icon { color: #dc2626; }
+  .scm-toast.warning { border-color: #d97706; }
+  .scm-toast.warning .scm-toast-icon { color: #d97706; }
+  @keyframes scm-toast-in {
+    from { opacity: 0; transform: translateX(60px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(0)    scale(1);    }
+  }
+  @keyframes scm-toast-out {
+    from { opacity: 1; transform: translateX(0)    scale(1);    }
+    to   { opacity: 0; transform: translateX(60px) scale(0.95); }
+  }
+
+  /* =========================================================
+     GLOBAL MODAL / POPUP ALIGNMENT FIX
+     Forces ALL fixed overlay popups to open at the TOP of the
+     viewport instead of center, so nothing is ever off-screen.
+     ========================================================= */
+
+  /* Target every fixed full-screen overlay (the dark backdrop) */
+  .fixed.inset-0 {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+
+  /* Keep the modal box itself from stretching to full height,
+     and give it a sensible max-height so it scrolls internally
+     when content is very long */
+  .fixed.inset-0 > div:not(.fixed) {
+    flex-shrink: 0;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    margin-top: 0 !important;
+  }
+
+  /* Side-panel drawers that slide in from the right should stay
+     full-height and NOT be affected by the top-align rule */
+  .fixed.inset-y-0 {
+    align-items: stretch !important;
+    overflow-y: auto !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+</style>
+
+<div id="scm-toast-container"></div>
+
+<script>
+(function() {
+  var ICONS = {
+    info:    '<svg class="scm-toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    success: '<svg class="scm-toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    error:   '<svg class="scm-toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    warning: '<svg class="scm-toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>',
+  };
+
+  function classify(msg) {
+    var m = msg.toLowerCase();
+    if (/success|created|sent|approved|saved|generated|confirmed|submitted|done|complete|updated|paid|notif/i.test(m)) return 'success';
+    if (/error|fail|invalid|wrong|not found|could not|unable/i.test(m)) return 'error';
+    if (/warning|please|required|select|must|cannot|already/i.test(m)) return 'warning';
+    return 'info';
+  }
+
+  window.showToast = function(msg, type) {
+    var container = document.getElementById('scm-toast-container');
+    if (!container) { return; }
+
+    type = type || classify(String(msg));
+    var icon = ICONS[type] || ICONS.info;
+
+    var toast = document.createElement('div');
+    toast.className = 'scm-toast ' + type;
+    toast.innerHTML =
+      icon +
+      '<span class="scm-toast-body">' + String(msg).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>' +
+      '<button class="scm-toast-close" title="Dismiss">&times;</button>';
+
+    var closeBtn = toast.querySelector('.scm-toast-close');
+    function dismiss() {
+      toast.classList.add('scm-toast-out');
+      setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 320);
+    }
+    closeBtn.addEventListener('click', dismiss);
+
+    container.appendChild(toast);
+
+    // Auto-dismiss after 5 s
+    setTimeout(dismiss, 5000);
+  };
+
+  // Override native alert globally
+  window.alert = function(msg) { window.showToast(msg); };
+
+  // Override native confirm globally to render a gorgeous, premium modal popup
+  window.confirm = function(msg) {
+    return new Promise(function(resolve) {
+      // Create overlay container
+      var overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100vw';
+      overlay.style.height = '100vh';
+      overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+      overlay.style.backdropFilter = 'blur(4px)';
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'flex-start';
+      overlay.style.paddingTop = '1.5rem';
+      overlay.style.justifyContent = 'center';
+      overlay.style.zIndex = '99999';
+      overlay.style.opacity = '0';
+      overlay.style.transition = 'opacity 0.18s ease-out';
+      
+      // Create dialog card
+      var box = document.createElement('div');
+      box.style.backgroundColor = '#ffffff';
+      box.style.borderRadius = '16px';
+      box.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05)';
+      box.style.width = '90%';
+      box.style.maxWidth = '460px';
+      box.style.padding = '24px';
+      box.style.transform = 'scale(0.96)';
+      box.style.transition = 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      
+      // Build HTML content
+      box.innerHTML = 
+        '<div style="display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px;">' +
+          '<div style="background-color: #fef3c7; border-radius: 50%; padding: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+            '<svg style="width: 24px; height: 24px; color: #d97706;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">' +
+              '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div style="flex: 1;">' +
+            '<h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0; font-family: system-ui, -apple-system, sans-serif;">Verification Required</h3>' +
+            '<p style="font-size: 14px; font-weight: 500; color: #475569; line-height: 1.5; margin: 0; font-family: system-ui, -apple-system, sans-serif;">' + String(msg).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display: flex; justify-content: flex-end; gap: 12px;">' +
+          '<button id="scm-confirm-cancel" style="padding: 9px 18px; border: 1px solid #cbd5e1; background-color: #ffffff; color: #334155; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; font-family: system-ui, sans-serif; transition: all 0.15s ease;">Cancel</button>' +
+          '<button id="scm-confirm-proceed" style="padding: 9px 18px; border: none; background-color: #1e3a8a; color: #ffffff; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; font-family: system-ui, sans-serif; transition: all 0.15s ease; box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.25);">Confirm & Proceed</button>' +
+        '</div>';
+
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+      
+      // Trigger animation
+      requestAnimationFrame(function() {
+        overlay.style.opacity = '1';
+        box.style.transform = 'scale(1)';
+      });
+
+      var cancelBtn = box.querySelector('#scm-confirm-cancel');
+      var proceedBtn = box.querySelector('#scm-confirm-proceed');
+
+      // Visual hover feedback
+      cancelBtn.onmouseenter = function() { cancelBtn.style.backgroundColor = '#f1f5f9'; };
+      cancelBtn.onmouseleave = function() { cancelBtn.style.backgroundColor = '#ffffff'; };
+      proceedBtn.onmouseenter = function() { proceedBtn.style.backgroundColor = '#172554'; };
+      proceedBtn.onmouseleave = function() { proceedBtn.style.backgroundColor = '#1e3a8a'; };
+
+      function cleanup(val) {
+        overlay.style.opacity = '0';
+        box.style.transform = 'scale(0.96)';
+        setTimeout(function() {
+          if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+          resolve(val);
+        }, 180);
+      }
+
+      cancelBtn.onclick = function() { cleanup(false); };
+      proceedBtn.onclick = function() { cleanup(true); };
+      overlay.onclick = function(e) { if (e.target === overlay) cleanup(false); };
+      
+      // Accessibility listeners
+      var keyHandler = function(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          cleanup(false);
+          document.removeEventListener('keydown', keyHandler);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          cleanup(true);
+          document.removeEventListener('keydown', keyHandler);
+        }
+      };
+      document.addEventListener('keydown', keyHandler);
+    });
+  };
+})();
+</script>
+
+
+
+
+
+
+
+
+    <title>AutoSCM - Enterprise Procurement & Manufacturing Suite</title>
+
+
+
+
+
+
+
+    <!-- React & ReactDOM -->
+
+
+
+
+
+
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+
+
+
+
+
+
+
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+
+
+
+
+
+
+    <!-- Babel -->
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+    <!-- Tailwind CSS -->
+
+
+
+
+
+
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+
+
+
+
+
+
+    <!-- Supabase -->
+
+
+
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+
+
+
+
+
+    <!-- Google Fonts -->
+
+
+
+
+
+
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+
+
+
+
+
+
+    <!-- AutoSCM Supabase Service -->
+
+
+
+
+
+
+
+    <script src="./supabaseService.js"></script>
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+    <style>
+
+
+
+
+
+
+
+        body {
+
+
+
+
+
+
+
+            font-family: 'Inter', sans-serif;
+
+
+
+
+
+
+
+            background-color: #f8fafc;
+
+
+
+
+
+
+
+            margin: 0;
+
+
+
+
+
+
+
+            padding: 0;
+
+
+
+
+
+
+
+            -webkit-font-smoothing: antialiased;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        .animate-fade-in {
+
+
+
+
+
+
+
+            animation: fadeIn 0.5s ease-out forwards;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        @keyframes fadeIn {
+
+
+
+
+
+
+
+            from { opacity: 0; transform: translateY(15px); }
+
+
+
+
+
+
+
+            to { opacity: 1; transform: translateY(0); }
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        .glass-card {
+
+
+
+
+
+
+
+            background: rgba(255, 255, 255, 0.95);
+
+
+
+
+
+
+
+            backdrop-filter: blur(10px);
+
+
+
+
+
+
+
+            border: 1px solid rgba(226, 232, 240, 0.8);
+
+
+
+
+
+
+
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        .dark-glass {
+
+
+
+
+
+
+
+            background: rgba(15, 23, 42, 0.85);
+
+
+
+
+
+
+
+            backdrop-filter: blur(15px);
+
+
+
+
+
+
+
+            border: 1px solid rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /* Custom Scrollbar */
+
+
+
+
+
+
+
+        ::-webkit-scrollbar {
+
+
+
+
+
+
+
+            width: 8px;
+
+
+
+
+
+
+
+            height: 8px;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        ::-webkit-scrollbar-track {
+
+
+
+
+
+
+
+            background: transparent;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        ::-webkit-scrollbar-thumb {
+
+
+
+
+
+
+
+            background: #cbd5e1;
+
+
+
+
+
+
+
+            border-radius: 4px;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        ::-webkit-scrollbar-thumb:hover {
+
+
+
+
+
+
+
+            background: #94a3b8;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        .sidebar-link {
+
+
+
+
+
+
+
+            transition: all 0.2s ease;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        .sidebar-link.active {
+
+
+
+
+
+
+
+            background: rgba(59, 130, 246, 0.15);
+
+
+
+
+
+
+
+            color: #60a5fa;
+
+
+
+
+
+
+
+            border-right: 3px solid #3b82f6;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+        .sidebar-link:hover:not(.active) {
+
+
+
+
+
+
+
+            background: rgba(241, 245, 249, 0.1);
+
+
+
+
+
+
+
+            color: #f8fafc;
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+    </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script>
+
+
+
+
+
+
+
+        tailwind.config = {
+
+
+
+
+
+
+
+            theme: {
+
+
+
+
+
+
+
+                extend: {
+
+
+
+
+
+
+
+                    colors: {
+
+
+
+
+
+
+
+                        corp: {
+
+
+
+
+
+
+
+                            black: '#020617',
+
+
+
+
+
+
+
+                            dark: '#0f172a',
+
+
+
+
+
+
+
+                            slate: '#334155',
+
+
+
+
+
+
+
+                            silver: '#94a3b8',
+
+
+
+
+
+
+
+                            light: '#f8fafc',
+
+
+
+
+
+
+
+                            blue: '#1d4ed8',
+
+
+
+
+
+
+
+                            accent: '#3b82f6',
+
+
+
+
+
+
+
+                            success: '#10b981',
+
+
+
+
+
+
+
+                            warning: '#f59e0b',
+
+
+
+
+
+
+
+                            danger: '#ef4444'
+
+
+
+
+
+
+
+                        }
+
+
+
+
+
+
+
+                    }
+
+
+
+
+
+
+
+                }
+
+
+
+
+
+
+
+            }
+
+
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+    </script>
+
+
+
+
+
+
+
+</head>
+
+
+
+
+
+
+
+<body>
+
+
+
+
+
+
+
+    <div id="root"></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <script src="./app.js"></script>
+
+
+
+
+
+
+
+</body>
+
+
+
+
+
+
+
+</html>
+
+
+
+
+
+
+
+

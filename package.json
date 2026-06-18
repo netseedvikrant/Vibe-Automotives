@@ -1,0 +1,23 @@
+{
+    "name":  "autoscm",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "fix_button.js",
+    "scripts":  {
+                    "test":  "echo \"Error: no test specified\" && exit 1",
+                    "build": "npx babel app.jsx --out-file app.js",
+                    "start":  "node server.js"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "devDependencies":  {
+                            "@babel/cli":  "^8.0.1",
+                            "@babel/core":  "^8.0.1",
+                            "@babel/preset-env":  "^8.0.1",
+                            "@babel/preset-react":  "^8.0.1"
+                        }
+}
