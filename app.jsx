@@ -89010,8 +89010,6 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
 
-            
-                return () => clearInterval(interval);
             }, []);
 
 
