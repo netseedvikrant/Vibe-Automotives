@@ -112668,6 +112668,7 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
             const [activeTab, setActiveTab] = useState('main');
+            const [activeSection, setActiveSection] = useState('dashboard-top');
 
 
 
@@ -113564,6 +113565,64 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
             const getDashboardContent = () => {
+                if (user.role.includes('Buyer') || user.role === 'Procurement Head') {
+                    return (
+                        <div className="space-y-16">
+                            <div id="dashboard-top" style={{ scrollMarginTop: '80px' }}>
+                                {user.role === 'Procurement Head' ? <ProcurementHeadDashboard /> : 
+                                 user.role === 'Senior Buyer' ? <SeniorBuyerDashboard /> :
+                                 user.role === 'Buyer' ? <BuyerDashboard /> : null}
+                            </div>
+                            <div id="suppliers" style={{ scrollMarginTop: '80px' }} className="border-t border-gray-100 pt-16 mt-16">
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-extrabold text-corp-dark">Supplier Master (AVL)</h2>
+                                </div>
+                                <SupplierMasterDashboard />
+                            </div>
+                            <div id="reports" style={{ scrollMarginTop: '80px' }} className="border-t border-gray-100 pt-16 mt-16">
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-extrabold text-corp-dark">Reports & Analytics</h2>
+                                </div>
+                                <ReportsAnalyticsDashboard />
+                            </div>
+                            <div id="purchase_orders" style={{ scrollMarginTop: '80px' }} className="border-t border-gray-100 pt-16 mt-16">
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-extrabold text-corp-dark">Purchase Orders</h2>
+                                </div>
+                                <PurchaseOrdersDashboard />
+                            </div>
+                            <div id="rfqs" style={{ scrollMarginTop: '80px' }} className="border-t border-gray-100 pt-16 mt-16">
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-extrabold text-corp-dark">RFQs & Sourcing</h2>
+                                </div>
+                                <RFQsDashboard />
+                            </div>
+                            {user.role === 'Procurement Head' && (
+                                <div id="inventory_grn" style={{ scrollMarginTop: '80px' }} className="border-t border-gray-100 pt-16 mt-16">
+                                    <div className="mb-6">
+                                        <h2 className="text-2xl font-extrabold text-corp-dark">Inventory & GRN</h2>
+                                    </div>
+                                    <InventoryDashboard />
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+
+                switch(user.role) {
+                    case 'Production Planner': return <ProductionPlannerDashboard />;
+                    case 'Finance Controller': return <FinanceDashboard />;
+                    case 'Inventory Manager': return <InventoryDashboard />;
+                    case 'Supplier': return <SupplierDashboard />;
+                    case 'System Admin': return <AdminDashboard />;
+                    case 'Logistics Team': return <LogisticsDashboard />;
+                    case 'Warehouse Team': return <WarehouseDashboard />;
+                    case 'supplier_quality_engineer': return <SQEDashboard />;
+                    default: return <ProcurementHeadDashboard />;
+                }
+            };
+
+            const _old_getDashboardContent = () => {
 
 
 
@@ -114076,6 +114135,49 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
             const getNavItems = () => {
+                const base = [
+                    { name: 'Dashboard', icon: Icons.Dashboard, active: activeSection === 'dashboard-top', id: 'dashboard-top' },
+                ];
+                
+                if (user.role === 'Production Planner') {
+                    base.push({ name: 'Material Requests', icon: Icons.ClipboardList, active: activeSection === 'material-requests', id: 'material-requests' });
+                    base.push({ name: 'Shortage Alerts', icon: Icons.AlertTriangle, active: activeSection === 'shortage-alerts', id: 'shortage-alerts' });
+                    base.push({ name: 'Inventory Status', icon: Icons.Box, active: activeSection === 'inventory-status', id: 'inventory-status' });
+                    base.push({ name: 'Reports', icon: Icons.TrendingUp, active: activeSection === 'dashboard-top', id: 'dashboard-top' });
+                } else if (user.role.includes('Buyer') || user.role === 'Procurement Head') {
+                    base.push({ name: 'Supplier Master (AVL)', icon: Icons.Users, active: activeSection === 'suppliers', id: 'suppliers' });
+                    base.push({ name: 'Reports & Analytics', icon: Icons.TrendingUp, active: activeSection === 'reports', id: 'reports' });
+                    base.push({ name: 'Purchase Orders', icon: Icons.ShoppingCart, active: activeSection === 'purchase_orders', id: 'purchase_orders' });
+                    base.push({ name: 'RFQs & Sourcing', icon: Icons.FileText, active: activeSection === 'rfqs', id: 'rfqs' });
+                }
+                
+                if (user.role === 'Inventory Manager' || user.role === 'Procurement Head') {
+                    base.push({ name: 'Inventory & GRN', icon: Icons.Box, active: activeSection === 'inventory_grn', id: 'inventory_grn' });
+                }
+
+                if (user.role === 'System Admin') {
+                    base.push({ name: 'User Management', icon: Icons.Users, active: false });
+                    base.push({ name: 'Settings', icon: Icons.Settings, active: false });
+                }
+
+                if (user.role === 'Supplier') {
+                    base.push({ name: 'Active RFQs', icon: Icons.FileText, active: false });
+                    base.push({ name: 'Quotations', icon: Icons.ClipboardList, active: false });
+                    base.push({ name: 'Purchase Orders', icon: Icons.ShoppingCart, active: false });
+                }
+
+                if (user.role === 'Logistics Team') {
+                    base.push({ name: 'Shipment Tracking', icon: Icons.Truck, active: true });
+                }
+
+                if (user.role === 'Warehouse Team') {
+                    base.push({ name: 'Receiving Queue', icon: Icons.ClipboardList, active: true });
+                }
+
+                return base;
+            };
+
+            const _old_getNavItems = () => {
 
 
 
@@ -114685,6 +114787,33 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
             };
 
+            useEffect(() => {
+                const mainEl = document.querySelector('main');
+                if (!mainEl) return;
+
+                const handleScroll = () => {
+                    const navItems = getNavItems();
+                    let currentSection = activeSection;
+
+                    for (const item of navItems) {
+                        if (!item.id) continue;
+                        const el = document.getElementById(item.id);
+                        if (el) {
+                            const rect = el.getBoundingClientRect();
+                            if (rect.top <= 200 && rect.bottom > 200) {
+                                currentSection = item.id;
+                            }
+                        }
+                    }
+                    if (currentSection !== activeSection) {
+                        setActiveSection(currentSection);
+                    }
+                };
+
+                mainEl.addEventListener('scroll', handleScroll);
+                return () => mainEl.removeEventListener('scroll', handleScroll);
+            }, [user, activeSection]);
+
 
 
 
@@ -115052,171 +115181,15 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
                                         onClick={(e) => {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                            if (item.onClick) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                e.preventDefault();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                                            e.preventDefault();
+                                            if (item.id) {
+                                                setActiveSection(item.id);
+                                                const el = document.getElementById(item.id);
+                                                if (el) {
+                                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                                }
+                                            } else if (item.onClick) {
                                                 item.onClick();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                            } else if (item.id) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                e.preventDefault();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                setActiveTab('main');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                setTimeout(() => {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                    const el = document.getElementById(item.id);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                                }, 100);
-
-
-
-
-
 
 
 
