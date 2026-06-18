@@ -1,12 +1,14 @@
 // Navbar scroll effect
 const navbar = document.querySelector('.navbar');
-window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
-        navbar.classList.add('scrolled');
-    } else {
-        navbar.classList.remove('scrolled');
-    }
-});
+if (navbar) {
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+}
 
 // Intersection Observer for scroll animations
 const observerOptions = {
@@ -30,44 +32,50 @@ document.querySelectorAll('.fade-in-up, .fade-in-left, .fade-in-right').forEach(
 
 // Carousel Logic
 const track = document.querySelector('.carousel-track');
-const slides = Array.from(track.children);
-const nextBtn = document.querySelector('.carousel-btn.next');
-const prevBtn = document.querySelector('.carousel-btn.prev');
-const dotsContainer = document.querySelector('.carousel-dots');
-const dots = Array.from(dotsContainer.children);
-
-let currentSlide = 0;
-
-function updateCarousel(index) {
-    slides.forEach(slide => slide.classList.remove('active'));
-    dots.forEach(dot => dot.classList.remove('active'));
+if (track) {
+    const slides = Array.from(track.children);
+    const nextBtn = document.querySelector('.carousel-btn.next');
+    const prevBtn = document.querySelector('.carousel-btn.prev');
+    const dotsContainer = document.querySelector('.carousel-dots');
+    const dots = dotsContainer ? Array.from(dotsContainer.children) : [];
     
-    slides[index].classList.add('active');
-    dots[index].classList.add('active');
-}
-
-nextBtn.addEventListener('click', () => {
-    currentSlide = (currentSlide + 1) % slides.length;
-    updateCarousel(currentSlide);
-});
-
-prevBtn.addEventListener('click', () => {
-    currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-    updateCarousel(currentSlide);
-});
-
-dots.forEach((dot, index) => {
-    dot.addEventListener('click', () => {
-        currentSlide = index;
-        updateCarousel(currentSlide);
+    let currentSlide = 0;
+    
+    function updateCarousel(index) {
+        slides.forEach(slide => slide.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+        
+        slides[index].classList.add('active');
+        if (dots[index]) dots[index].classList.add('active');
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            currentSlide = (currentSlide + 1) % slides.length;
+            updateCarousel(currentSlide);
+        });
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            updateCarousel(currentSlide);
+        });
+    }
+    
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            currentSlide = index;
+            updateCarousel(currentSlide);
+        });
     });
-});
-
-// Auto advance carousel
-setInterval(() => {
-    currentSlide = (currentSlide + 1) % slides.length;
-    updateCarousel(currentSlide);
-}, 5000);
+    
+    // Auto advance carousel
+    setInterval(() => {
+        currentSlide = (currentSlide + 1) % slides.length;
+        updateCarousel(currentSlide);
+    }, 5000);
+}
 
 // Smooth scrolling for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
