@@ -115552,7 +115552,7 @@ disabled={isSubmitting || selectedInvoice.payment_status === 'Paid'}
 
 
 
-                                    <div className="text-xs font-medium text-corp-slate">{user.role}</div>
+                                    <div className="text-xs font-medium text-white/70">{user.role}</div>
 
 
 
