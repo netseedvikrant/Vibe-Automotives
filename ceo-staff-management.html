@@ -305,10 +305,112 @@
             .header-section h1 { font-size: 2.2rem; }
             .nav-links { flex-direction: column; gap: 0.5rem; }
         }
+
+        /* CEO Broadcast/Directive Modal Styling */
+        .ceo-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .ceo-modal-overlay.active {
+            opacity: 1;
+        }
+        .ceo-modal-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.25), inset 0 0 20px rgba(255, 215, 0, 0.1);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            padding: 2.5rem;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+        .ceo-modal-overlay.active .ceo-modal-card {
+            transform: scale(1);
+        }
+        .ceo-modal-header {
+            margin-bottom: 1.5rem;
+        }
+        .ceo-modal-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.5rem;
+            animation: pulse-gold 2s infinite alternate;
+        }
+        .ceo-modal-header h2 {
+            color: var(--primary);
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+        .ceo-modal-body {
+            color: #f8fafc;
+            font-size: 1.15rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            text-align: left;
+        }
+        .ceo-modal-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: #000;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        .ceo-modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+        }
+        .ceo-modal-btn:active {
+            transform: translateY(1px);
+        }
+        @keyframes pulse-gold {
+            0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.4)); }
+            100% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)); }
+        }
     </style>
 </head>
 <body>
     <div class="glow-orb"></div>
+
+    <!-- CEO Send Message Modal -->
+    <div id="ceo-send-message-modal" class="ceo-modal-overlay">
+        <div class="ceo-modal-card">
+            <div class="ceo-modal-header">
+                <span class="ceo-modal-icon">📨</span>
+                <h2 id="send-modal-title">COMPOSE DIRECTIVE</h2>
+            </div>
+            <div class="ceo-modal-body" style="border-left: 4px solid var(--primary); padding: 0.5rem 1rem;">
+                <p id="send-modal-subtitle" style="font-size: 0.95rem; margin-bottom: 1rem; color: var(--text-muted);"></p>
+                <textarea id="ceo-message-textarea" placeholder="Type your executive directive here..." style="width: 100%; height: 120px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; padding: 0.8rem; font-family: inherit; font-size: 1rem; resize: none; outline: none; transition: border-color 0.3s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--glass-border)'"></textarea>
+                <div id="send-modal-status" style="display: none; margin-top: 1rem; font-size: 0.95rem; font-weight: 600;"></div>
+            </div>
+            <div class="ceo-modal-footer" style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="btn-cancel-message" class="ceo-modal-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; box-shadow: none;">Cancel</button>
+                <button id="btn-submit-message" class="ceo-modal-btn">Send Directive</button>
+            </div>
+        </div>
+    </div>
 
     <nav class="navbar">
         <a href="portal.html" class="logo">
@@ -374,6 +476,9 @@
 
     <script>
         // Restrict access to CEO only
+        let currentRecipientEmail = '';
+        let currentRecipientName = '';
+
         document.addEventListener('DOMContentLoaded', () => {
             const userSession = sessionStorage.getItem('vibe_user');
             if (!userSession) {
@@ -391,6 +496,94 @@
 
             // Refresh listener
             document.getElementById('btn-refresh-staff').addEventListener('click', loadStaff);
+
+            // Cancel message listener
+            const btnCancel = document.getElementById('btn-cancel-message');
+            if (btnCancel) {
+                btnCancel.addEventListener('click', () => {
+                    const modal = document.getElementById('ceo-send-message-modal');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        setTimeout(() => {
+                            modal.style.display = 'none';
+                        }, 500);
+                    }
+                });
+            }
+
+            // Submit message listener
+            const btnSubmit = document.getElementById('btn-submit-message');
+            if (btnSubmit) {
+                btnSubmit.addEventListener('click', async () => {
+                    const textarea = document.getElementById('ceo-message-textarea');
+                    const statusEl = document.getElementById('send-modal-status');
+                    
+                    if (!textarea || !textarea.value.trim()) {
+                        if (statusEl) {
+                            statusEl.style.display = 'block';
+                            statusEl.textContent = 'Please enter a message directive.';
+                            statusEl.style.color = '#ff4e4e';
+                        }
+                        return;
+                    }
+                    
+                    const message = textarea.value.trim();
+                    btnSubmit.disabled = true;
+                    btnSubmit.textContent = 'Sending...';
+                    
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.textContent = 'Inserting into secure communication vault...';
+                        statusEl.style.color = 'var(--primary)';
+                    }
+                    
+                    try {
+                        if (window.supabaseInit) {
+                            await window.supabaseInit;
+                        }
+                        const client = window.supabaseClient;
+                        if (!client) throw new Error("Supabase client not initialized.");
+
+                        const { error } = await client.from('activity_logs').insert({
+                            action_type: 'CEO_DIRECT_MESSAGE',
+                            action_description: message,
+                            new_values: {
+                                recipient_email: currentRecipientEmail.toLowerCase(),
+                                recipient_name: currentRecipientName,
+                                sender: "CEO",
+                                importance: "high",
+                                read_status: false
+                            }
+                        });
+
+                        if (error) throw error;
+                        
+                        // Show success status
+                        statusEl.textContent = `Directive successfully sent to ${currentRecipientName}!`;
+                        statusEl.style.color = '#00ffaa';
+                        
+                        // Auto close modal after 1.5s
+                        setTimeout(() => {
+                            const modal = document.getElementById('ceo-send-message-modal');
+                            if (modal) {
+                                modal.classList.remove('active');
+                                setTimeout(() => {
+                                    modal.style.display = 'none';
+                                    btnSubmit.disabled = false;
+                                    btnSubmit.textContent = 'Send Directive';
+                                }, 500);
+                            }
+                        }, 1500);
+                        
+                    } catch (err) {
+                        console.error("Error sending message:", err);
+                        statusEl.textContent = "Failed to send directive: " + err.message;
+                        statusEl.style.color = '#ff4e4e';
+                        btnSubmit.disabled = false;
+                        btnSubmit.textContent = 'Send Directive';
+                    }
+                });
+            }
         });
 
         async function loadStaff() {
@@ -545,9 +738,26 @@
         }
 
         function messageStaff(email, name) {
-            const message = prompt(`Send direct message to ${name} (${email}):`);
-            if (message) {
-                alert(`Message sent to ${name}: "${message}"`);
+            currentRecipientEmail = email;
+            currentRecipientName = name;
+            
+            const modal = document.getElementById('ceo-send-message-modal');
+            const subtitle = document.getElementById('send-modal-subtitle');
+            const textarea = document.getElementById('ceo-message-textarea');
+            const statusEl = document.getElementById('send-modal-status');
+            
+            if (modal && subtitle && textarea && statusEl) {
+                subtitle.textContent = `Compose directive to: ${name} (${email})`;
+                textarea.value = '';
+                statusEl.style.display = 'none';
+                statusEl.textContent = '';
+                statusEl.style.color = '';
+                
+                // Show modal
+                modal.style.display = 'flex';
+                // Force reflow
+                modal.offsetHeight;
+                modal.classList.add('active');
             }
         }
     </script>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Car, AlertTriangle, CheckCircle2, ShieldAlert, 
+import {
+  Car, AlertTriangle, CheckCircle2, ShieldAlert,
   TrendingUp, HardDrive, ArrowUpRight, Filter,
   BarChart3, Eye, Calendar
 } from 'lucide-react';
@@ -10,19 +10,19 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { supabase } from '../lib/supabase';
 import TimelineModule from './TimelineModule';
 
-import { 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  Legend, 
-  LineChart, 
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  LineChart,
   Line,
-  PieChart, 
-  Pie, 
-  Cell 
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
 
 const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
@@ -43,7 +43,7 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
       try {
         const { data: tests } = await supabase.from('validation_tests').select('*');
         setValidationTests(tests || []);
-        
+
         const { data: ecoList } = await supabase.from('eco_requests').select('*');
         setEcos(ecoList || []);
 
@@ -70,12 +70,40 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
     fetchAnalyticsData();
   }, []);
 
+  useEffect(() => {
+    const forceDropdownStyles = () => {
+      // Finds all <select> and <option> tags currently on the screen
+      const selects = document.querySelectorAll('select');
+      const options = document.querySelectorAll('select option');
+
+      selects.forEach(select => {
+        select.style.setProperty('background-color', '#1a1a1e', 'important');
+        select.style.setProperty('color', '#ffffff', 'important');
+      });
+
+      options.forEach(option => {
+        option.style.setProperty('background-color', '#1a1a1e', 'important');
+        option.style.setProperty('color', '#ffffff', 'important');
+      });
+    };
+
+    // Run it immediately when the dashboard loads
+    forceDropdownStyles();
+
+    // Since forms can appear/disappear based on tabs, observe the page for updates
+    const observer = new MutationObserver(forceDropdownStyles);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Clean up observer on unmount
+    return () => observer.disconnect();
+  }, []);
+
   // Aggregated Chart Data
   const progressData = programs.map(p => ({
     name: p.program_code || p.program_name.substring(0, 8),
     'Current Gate': p.current_gate || 0,
-    'Completion %': p.apqp_gates 
-      ? Math.round(p.apqp_gates.reduce((acc, g) => acc + (g.completion_percentage || 0), 0) / 6) 
+    'Completion %': p.apqp_gates
+      ? Math.round(p.apqp_gates.reduce((acc, g) => acc + (g.completion_percentage || 0), 0) / 6)
       : 0
   }));
 
@@ -106,11 +134,11 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
     { label: 'Pending Approvals', value: pendingApprovals.toString(), change: '-4', icon: CheckCircle2, color: 'var(--success)' },
     { label: 'Open Risks', value: openRisks.toString(), change: '+12', icon: ShieldAlert, color: 'var(--error)' },
     { label: 'Budget Usage', value: programs.length > 0 ? `${Math.round(programs.reduce((acc, p) => acc + (p.estimated_budget || 0), 0) / 1000000)}M` : '0', change: '+5%', icon: TrendingUp, color: 'var(--accent-secondary)' },
-    { label: 'Prototype Status', value: prototypesTotal > 0 ? `${Math.round((prototypesComplete/prototypesTotal)*100)}%` : 'N/A', change: '+2%', icon: HardDrive, color: 'var(--accent)' },
+    { label: 'Prototype Status', value: prototypesTotal > 0 ? `${Math.round((prototypesComplete / prototypesTotal) * 100)}%` : 'N/A', change: '+2%', icon: HardDrive, color: 'var(--accent)' },
   ];
 
   const avgVelocity = (() => {
-    const completedGates = programs.flatMap(p => 
+    const completedGates = programs.flatMap(p =>
       (p.apqp_gates || []).filter(g => g.gate_status === 'Completed' && g.updated_at && g.created_at)
     );
     if (completedGates.length === 0) return null;
@@ -150,7 +178,7 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="dashboard-wrapper"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -162,10 +190,10 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
             {activeTab === 'Reports' ? 'KPI Analytics & Performance' : showTimeline ? 'Program Timeline & Milestones' : 'Program Management Overview'}
           </h1>
           <p className="subtitle">
-            {activeTab === 'Reports' 
-              ? 'Aggregated engineering program performance and validation metrics.' 
-              : showTimeline 
-                ? 'Manage gates, reschedule deadlines, and update progress.' 
+            {activeTab === 'Reports'
+              ? 'Aggregated engineering program performance and validation metrics.'
+              : showTimeline
+                ? 'Manage gates, reschedule deadlines, and update progress.'
                 : 'Real-time status of vehicle development lifecycles across all plants.'}
           </p>
         </div>
@@ -189,7 +217,7 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
             <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase' }}>Overall DVP&R Pass Rate</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#00ff9d', marginTop: '8px' }}>
-                {validationTests.length > 0 
+                {validationTests.length > 0
                   ? `${Math.round((validationTests.filter(t => t.status === 'Passed').length / validationTests.length) * 100)}%`
                   : '85.7%'}
               </div>
@@ -291,7 +319,7 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
           {/* KPI Section */}
           <section className="kpi-grid">
             {kpis.map((kpi, index) => (
-              <motion.div 
+              <motion.div
                 key={kpi.label}
                 className="kpi-card glass glow-border"
                 whileHover={{ y: -5, transition: { duration: 0.2 } }}
@@ -334,7 +362,7 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
                     </div>
                     <div className="gate-progress-wrapper">
                       <div className="progress-bar-bg">
-                        <motion.div 
+                        <motion.div
                           className="progress-bar-fill"
                           initial={{ width: 0 }}
                           animate={{ width: `${gate.completion_percentage}%` }}
@@ -358,7 +386,7 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
               </div>
               <div className="milestone-list">
                 {overduePrograms.length === 0 ? (
-                  <div className="text-muted" style={{padding: '16px'}}>No delayed milestones found.</div>
+                  <div className="text-muted" style={{ padding: '16px' }}>No delayed milestones found.</div>
                 ) : overduePrograms.map((m, i) => (
                   <div key={i} className="milestone-item">
                     <div className="m-icon flex-center"><AlertTriangle size={16} /></div>

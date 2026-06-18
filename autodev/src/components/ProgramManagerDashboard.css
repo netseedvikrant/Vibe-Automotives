@@ -77,7 +77,9 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-.kpi-change.up { color: var(--success); }
+.kpi-change.up {
+  color: var(--success);
+}
 
 /* Program status chips */
 .status-chip {
@@ -97,7 +99,10 @@
   border-color: rgba(255, 183, 3, 0.45);
   box-shadow: 0 0 12px rgba(255, 183, 3, 0.15);
 }
-.kpi-change.down { color: var(--error); }
+
+.kpi-change.down {
+  color: var(--error);
+}
 
 .kpi-content {
   display: flex;
@@ -181,9 +186,19 @@
   flex-shrink: 0;
 }
 
-.gate-status-dot.completed { background: var(--success); box-shadow: 0 0 10px var(--success); }
-.gate-status-dot.in-progress { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-.gate-status-dot.pending { background: var(--text-muted); }
+.gate-status-dot.completed {
+  background: var(--success);
+  box-shadow: 0 0 10px var(--success);
+}
+
+.gate-status-dot.in-progress {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+.gate-status-dot.pending {
+  background: var(--text-muted);
+}
 
 .gate-text {
   display: flex;
@@ -298,10 +313,21 @@
   border-radius: 50%;
 }
 
-.dot.concept { background: #fff; }
-.dot.design { background: var(--accent); }
-.dot.prototype { background: var(--accent-secondary); }
-.dot.production { background: var(--success); }
+.dot.concept {
+  background: #fff;
+}
+
+.dot.design {
+  background: var(--accent);
+}
+
+.dot.prototype {
+  background: var(--accent-secondary);
+}
+
+.dot.production {
+  background: var(--success);
+}
 
 .gantt-placeholder {
   min-height: 200px;
@@ -340,6 +366,24 @@
   height: 100%;
   border-radius: 20px;
   transform-origin: left;
+}
+
+/* Fix native select dropdown options showing white background */
+select {
+  background-color: var(--surface, #1a1f2e);
+  color: var(--text-primary, #fff);
+}
+
+select option {
+  background-color: var(--surface, #1a1f2e);
+  color: var(--text-primary, #fff);
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: var(--accent, #3b82f6);
+  color: #fff;
 }
 
 @media (max-width: 1200px) {

@@ -321,6 +321,41 @@
             background: var(--primary);
         }
 
+        /* Nomination Form Styling */
+        .input-group {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--glass-border);
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+        .input-group select:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+        .candidate-card .btn-select {
+            margin-top: 1rem;
+        }
+
         /* Footer */
         footer {
             text-align: center;
@@ -374,31 +409,67 @@
         </div>
 
         <div class="candidates-grid">
-            <!-- Candidate 1 -->
-            <div class="candidate-card">
-                <div class="avatar-large">SC</div>
-                <h3>Sarah Chen</h3>
-                <div class="role">Lead Thermal Engineer</div>
-                <p>"Solved complex thermal dissipation limits on high-current fast charging systems, keeping our designs 3 weeks ahead of schedule."</p>
-                <button class="btn-select" onclick="selectEOM('Sarah Chen')">Select as EOM</button>
+            <!-- AutoDev / R&D Card -->
+            <div class="candidate-card" id="card-autodev">
+                <div class="avatar-large" id="avatar-autodev">SC</div>
+                <h3>Engineering & Design</h3>
+                <div class="role" id="role-autodev">AutoDev EOM</div>
+                
+                <div class="input-group">
+                    <label for="select-autodev">Select Employee</label>
+                    <select id="select-autodev" onchange="updateEOMDetails('autodev')">
+                        <option value="" disabled selected>Loading staff...</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="quote-autodev">Nomination Quote</label>
+                    <textarea id="quote-autodev" rows="3" placeholder="Enter reason for nomination..."></textarea>
+                </div>
+                
+                <button class="btn-select" onclick="submitNomination('autodev')">Nominate for AutoDev</button>
             </div>
 
-            <!-- Candidate 2 -->
-            <div class="candidate-card">
-                <div class="avatar-large">AW</div>
-                <h3>Alicia Wong</h3>
-                <div class="role">Shift Supervisor</div>
-                <p>"Maintained 99.4% OEE on the primary assembly line and reduced average Andon cord resolution time by 45% this month."</p>
-                <button class="btn-select" onclick="selectEOM('Alicia Wong')">Select as EOM</button>
+            <!-- AutoMFG / Production Card -->
+            <div class="candidate-card" id="card-automfg">
+                <div class="avatar-large" id="avatar-automfg">MR</div>
+                <h3>Production & Assembly</h3>
+                <div class="role" id="role-automfg">AutoMFG EOM</div>
+                
+                <div class="input-group">
+                    <label for="select-automfg">Select Employee</label>
+                    <select id="select-automfg" onchange="updateEOMDetails('automfg')">
+                        <option value="" disabled selected>Loading staff...</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="quote-automfg">Nomination Quote</label>
+                    <textarea id="quote-automfg" rows="3" placeholder="Enter reason for nomination..."></textarea>
+                </div>
+                
+                <button class="btn-select" onclick="submitNomination('automfg')">Nominate for AutoMFG</button>
             </div>
 
-            <!-- Candidate 3 -->
-            <div class="candidate-card">
-                <div class="avatar-large">MJ</div>
-                <h3>Marcus Johnson</h3>
-                <div class="role">Plant Manager</div>
-                <p>"Successfully integrated the new automated welding stations with zero downtime and improved overall plant safety metrics."</p>
-                <button class="btn-select" onclick="selectEOM('Marcus Johnson')">Select as EOM</button>
+            <!-- AutoSCM / Procurement Card -->
+            <div class="candidate-card" id="card-autoscm">
+                <div class="avatar-large" id="avatar-autoscm">AT</div>
+                <h3>Procurement & Logistics</h3>
+                <div class="role" id="role-autoscm">AutoSCM EOM</div>
+                
+                <div class="input-group">
+                    <label for="select-autoscm">Select Employee</label>
+                    <select id="select-autoscm" onchange="updateEOMDetails('autoscm')">
+                        <option value="" disabled selected>Loading staff...</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="quote-autoscm">Nomination Quote</label>
+                    <textarea id="quote-autoscm" rows="3" placeholder="Enter reason for nomination..."></textarea>
+                </div>
+                
+                <button class="btn-select" onclick="submitNomination('autoscm')">Nominate for AutoSCM</button>
             </div>
         </div>
     </main>
@@ -416,9 +487,25 @@
         <p>&copy; 2026 VIBE Automotives. All rights reserved. Executive Board Confidential.</p>
     </footer>
 
+    <!-- Supabase Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
+
     <script>
-        // Restrict access to CEO only
-        document.addEventListener('DOMContentLoaded', () => {
+        let staffRegistry = {
+            autodev: [],
+            automfg: [],
+            autoscm: []
+        };
+
+        const defaultQuotes = {
+            autodev: "Solved complex thermal dissipation limits on high-current fast charging systems, keeping our designs ahead.",
+            automfg: "Maintained 99.4% OEE on the primary assembly line and reduced average Andon cord resolution time.",
+            autoscm: "A resilient supply chain isn't just about cost—it's about building transparency and relationships."
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Restrict access to CEO only
             const userSession = sessionStorage.getItem('vibe_user');
             if (!userSession) {
                 window.location.href = 'index.html';
@@ -427,21 +514,222 @@
             const user = JSON.parse(userSession);
             if (user.department !== 'EXECUTIVE') {
                 window.location.href = 'portal.html';
+                return;
             }
+
+            // Load staff registry
+            await loadStaffRegistry();
         });
-        
-        function selectEOM(name) {
+
+        async function loadStaffRegistry() {
+            try {
+                if (window.supabaseInit) {
+                    await window.supabaseInit;
+                }
+                const client = window.supabaseClient;
+                if (!client) throw new Error("Supabase client not initialized.");
+
+                // Fetch R&D users (users)
+                let rdUsers = [];
+                try {
+                    const { data, error } = await client.from('users').select('*');
+                    if (!error && data) rdUsers = data;
+                } catch (e) {
+                    console.warn("Failed to fetch users from R&D:", e);
+                }
+
+                // Fetch SCM/MFG users (erp_users)
+                let erpUsers = [];
+                try {
+                    const { data, error } = await client.from('erp_users').select('*');
+                    if (!error && data) erpUsers = data;
+                } catch (e) {
+                    console.warn("Failed to fetch erp_users:", e);
+                }
+
+                // Group lists
+                const addedEmails = new Set();
+
+                const classifyUser = (u) => {
+                    if (!u.email) return;
+                    const emailLower = u.email.toLowerCase();
+                    if (emailLower === 'ceo@vibe.com' || addedEmails.has(emailLower)) return;
+                    
+                    const roleLower = (u.role || '').toLowerCase();
+                    const deptLower = (u.department || '').toLowerCase();
+                    
+                    if (roleLower === 'ceo' || deptLower === 'executive') return;
+                    
+                    addedEmails.add(emailLower);
+
+                    // A. Check if SCM / Procurement
+                    if (emailLower.includes('procurement') || 
+                        emailLower.includes('supplier') || 
+                        emailLower.includes('scm') || 
+                        roleLower.includes('procurement') || 
+                        roleLower.includes('sourcing') || 
+                        roleLower.includes('logistics') || 
+                        roleLower.includes('supplier') ||
+                        deptLower.includes('procurement') ||
+                        deptLower.includes('scm')) {
+                        
+                        staffRegistry.autoscm.push({
+                            name: u.full_name,
+                            role: u.role || 'Logistics Specialist'
+                        });
+                    }
+                    // B. Check if MFG / Production
+                    else if (emailLower.includes('automfg') || 
+                             emailLower.includes('mfg') || 
+                             emailLower.endsWith('@automfg.io') ||
+                             roleLower.includes('mfg') || 
+                             roleLower.includes('assembly') || 
+                             roleLower.includes('plant') || 
+                             roleLower.includes('shift') ||
+                             roleLower.includes('operator') ||
+                             roleLower.includes('inspector') ||
+                             roleLower.includes('maintenance') ||
+                             deptLower.includes('production') ||
+                             deptLower.includes('mfg')) {
+                             
+                        staffRegistry.automfg.push({
+                            name: u.full_name,
+                            role: u.role || 'Production Supervisor'
+                        });
+                    }
+                    // C. Fallback to Engineering (AutoDev / R&D)
+                    else {
+                        staffRegistry.autodev.push({
+                            name: u.full_name,
+                            role: u.role || 'Design Engineer'
+                        });
+                    }
+                };
+
+                rdUsers.forEach(classifyUser);
+                erpUsers.forEach(classifyUser);
+
+                // Apply fallbacks if list is empty
+                if (staffRegistry.autodev.length === 0) {
+                    staffRegistry.autodev = [
+                        { name: "Sarah Chen", role: "Lead Thermal Engineer" },
+                        { name: "David Reyes", role: "Junior CAD Designer" },
+                        { name: "Elena Vance", role: "Lead Engineer" },
+                        { name: "Tony Stark", role: "Design Engineer" },
+                        { name: "Ripley Scott", role: "Validation Engineer" }
+                    ];
+                }
+                if (staffRegistry.automfg.length === 0) {
+                    staffRegistry.automfg = [
+                        { name: "Marcus Johnson", role: "Plant Manager" },
+                        { name: "Alicia Wong", role: "Shift Supervisor" },
+                        { name: "Robert Vance", role: "Assembly Lead" },
+                        { name: "Kenji Sato", role: "Robotics Specialist" }
+                    ];
+                }
+                if (staffRegistry.autoscm.length === 0) {
+                    staffRegistry.autoscm = [
+                        { name: "Liam Kinsley", role: "Logistics Head" },
+                        { name: "Aiko Tanaka", role: "Senior Sourcing Specialist" },
+                        { name: "Diana Prince", role: "Procurement Engineer" },
+                        { name: "Lucius Fox", role: "Supplier Engineer" }
+                    ];
+                }
+
+            } catch (err) {
+                console.error("Failed to load staff, loading mockups:", err);
+                staffRegistry.autodev = [
+                    { name: "Sarah Chen", role: "Lead Thermal Engineer" },
+                    { name: "David Reyes", role: "Junior CAD Designer" },
+                    { name: "Elena Vance", role: "Lead Engineer" },
+                    { name: "Tony Stark", role: "Design Engineer" },
+                    { name: "Ripley Scott", role: "Validation Engineer" }
+                ];
+                staffRegistry.automfg = [
+                    { name: "Marcus Johnson", role: "Plant Manager" },
+                    { name: "Alicia Wong", role: "Shift Supervisor" },
+                    { name: "Robert Vance", role: "Assembly Lead" },
+                    { name: "Kenji Sato", role: "Robotics Specialist" }
+                ];
+                staffRegistry.autoscm = [
+                    { name: "Liam Kinsley", role: "Logistics Head" },
+                    { name: "Aiko Tanaka", role: "Senior Sourcing Specialist" },
+                    { name: "Diana Prince", role: "Procurement Engineer" },
+                    { name: "Lucius Fox", role: "Supplier Engineer" }
+                ];
+            }
+
+            // Render dropdown selectors
+            renderDropdowns();
+        }
+
+        function renderDropdowns() {
+            ['autodev', 'automfg', 'autoscm'].forEach(dept => {
+                const selectEl = document.getElementById(`select-${dept}`);
+                selectEl.innerHTML = '<option value="" disabled selected>Select an employee...</option>';
+                
+                staffRegistry[dept].forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp.name;
+                    opt.textContent = `${emp.name} (${emp.role})`;
+                    opt.dataset.role = emp.role;
+                    selectEl.appendChild(opt);
+                });
+
+                // Populate with currently saved EOM if exists in localStorage
+                const saved = localStorage.getItem(`vibe_eom_${dept}`);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    selectEl.value = data.name;
+                    document.getElementById(`quote-${dept}`).value = data.quote;
+                    updateEOMDetails(dept);
+                } else {
+                    // Pre-fill default quote
+                    document.getElementById(`quote-${dept}`).value = defaultQuotes[dept];
+                }
+            });
+        }
+
+        function updateEOMDetails(dept) {
+            const selectEl = document.getElementById(`select-${dept}`);
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            if (!selectedOpt || selectedOpt.value === "") return;
+
+            const name = selectedOpt.value;
+            const role = selectedOpt.dataset.role || 'Team Member';
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+            document.getElementById(`avatar-${dept}`).textContent = initials;
+            document.getElementById(`role-${dept}`).textContent = role;
+        }
+
+        function submitNomination(dept) {
+            const selectEl = document.getElementById(`select-${dept}`);
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            if (!selectedOpt || selectedOpt.value === "") {
+                alert("Please select an employee first!");
+                return;
+            }
+
+            const name = selectedOpt.value;
+            const role = selectedOpt.dataset.role || 'Team Member';
+            const quote = document.getElementById(`quote-${dept}`).value.trim() || defaultQuotes[dept];
+
+            const eomData = { name, role, quote };
+            localStorage.setItem(`vibe_eom_${dept}`, JSON.stringify(eomData));
+
+            // Also keep vibe_current_eom for legacy compatibility if needed
+            localStorage.setItem('vibe_current_eom', name);
+
+            // Display success modal
             document.getElementById('eomName').textContent = name;
             const overlay = document.getElementById('successOverlay');
             overlay.style.display = 'flex';
             setTimeout(() => {
                 overlay.classList.add('show');
             }, 10);
-            
-            // Optionally save to local storage so it reflects on portal
-            localStorage.setItem('vibe_current_eom', name);
         }
-        
+
         function closeOverlay() {
             const overlay = document.getElementById('successOverlay');
             overlay.classList.remove('show');

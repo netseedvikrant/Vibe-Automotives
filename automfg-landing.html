@@ -211,23 +211,33 @@
         }
 
         .btn-launch-primary {
-            display: inline-block;
-            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
             color: #000000;
-            border: none;
-            padding: 1.1rem 3.5rem;
-            border-radius: 8px;
-            font-size: 1.05rem;
-            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 1.2rem 3.5rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
             text-decoration: none;
             cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 10px 25px rgba(0, 255, 170, 0.2);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 8px 25px rgba(0, 255, 170, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .btn-launch-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(0, 255, 170, 0.35);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0, 255, 170, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .btn-launch-primary:active {
+            transform: translateY(-1px) scale(0.99);
         }
 
         /* Right Side Details Panel */
@@ -442,10 +452,117 @@
             .container { grid-template-columns: 1fr; gap: 2rem; }
             .header-section h1 { font-size: 2.2rem; }
         }
+
+        /* CEO Broadcast Message Modal Styling */
+        .ceo-modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .ceo-modal-overlay.active {
+            opacity: 1;
+        }
+        .ceo-modal-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid #ffd700;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.25), inset 0 0 20px rgba(255, 215, 0, 0.1);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            padding: 2.5rem;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(10px);
+        }
+        .ceo-modal-overlay.active .ceo-modal-card {
+            transform: scale(1);
+        }
+        .ceo-modal-header {
+            margin-bottom: 1.5rem;
+        }
+        .ceo-modal-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 0.5rem;
+            animation: pulse-gold 2s infinite alternate;
+        }
+        .ceo-modal-header h2 {
+            color: #ffd700;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+        .ceo-modal-body {
+            color: #f8fafc;
+            font-size: 1.15rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+            text-align: left;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+        .ceo-modal-btn {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border: none;
+            color: #000;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+        .ceo-modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+        }
+        .ceo-modal-btn:active {
+            transform: translateY(1px);
+        }
+        @keyframes pulse-gold {
+            0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.4)); }
+            100% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8)); }
+        }
     </style>
+    <!-- Supabase Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase.js?v=1.2"></script>
 </head>
 <body>
     <div class="glow-orb"></div>
+
+    <!-- CEO Message Modal Overlay -->
+    <div id="ceo-message-modal" class="ceo-modal-overlay">
+        <div class="ceo-modal-card">
+            <div class="ceo-modal-header">
+                <span class="ceo-modal-icon">📨</span>
+                <h2>DIRECTIVE FROM THE OFFICE OF THE CEO</h2>
+            </div>
+            <div class="ceo-modal-body">
+                <p id="ceo-message-text">Loading message...</p>
+            </div>
+            <div class="ceo-modal-footer">
+                <button id="ceo-modal-acknowledge-btn" class="ceo-modal-btn">Acknowledge Directive</button>
+            </div>
+        </div>
+    </div>
 
     <nav class="navbar">
         <a href="portal.html" class="logo">
@@ -496,7 +613,7 @@
             <div class="launcher-panel">
                 <h2>Proceed to Shop Floor Dashboard</h2>
                 <p>Access the real-time manufacturing OEE and scheduling control board. Ensure your plant supervisor token is activated in your session before requesting plan overrides.</p>
-                <button onclick="launchMFG()" class="btn-launch-primary">Launch AutoMFG Dashboard</button>
+                <button onclick="launchMFG()" class="btn-launch-primary">Launch AutoMFG Dashboard 🚀</button>
             </div>
         </div>
 
@@ -567,29 +684,115 @@
             }
 
             // Dynamically load Employee of the Month if nominated
-            const currentEom = localStorage.getItem('vibe_current_eom');
+            const currentEom = localStorage.getItem('vibe_eom_automfg');
             if (currentEom) {
-                document.getElementById('eom-name').textContent = currentEom;
-                // Generate initials
-                const initials = currentEom.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                document.getElementById('eom-avatar').textContent = initials;
-                
-                // Set role and quote based on who it is
-                if (currentEom === 'Sarah Chen') {
-                    document.getElementById('eom-role').textContent = 'Lead Thermal Engineer';
-                    document.getElementById('eom-quote').textContent = '"Led fast-charging validation under extreme specs 3 weeks ahead of schedule."';
-                } else if (currentEom === 'Alicia Wong') {
-                    document.getElementById('eom-role').textContent = 'Shift Supervisor';
-                    document.getElementById('eom-quote').textContent = '"Reduced stamping shop downtime by 14.5% during assembly trials."';
-                } else if (currentEom === 'Marcus Johnson') {
-                    document.getElementById('eom-role').textContent = 'Plant Manager';
-                    document.getElementById('eom-quote').textContent = '"Coordinated cross-functional transition for Munich Engine Hub platform."';
-                } else {
-                    document.getElementById('eom-role').textContent = 'Valued Team Member';
-                    document.getElementById('eom-quote').textContent = '"Recognized for outstanding contribution and executive nomination."';
+                try {
+                    const data = JSON.parse(currentEom);
+                    document.getElementById('eom-name').textContent = data.name;
+                    document.getElementById('eom-role').textContent = data.role;
+                    document.getElementById('eom-quote').textContent = `"${data.quote}"`;
+                    
+                    const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    document.getElementById('eom-avatar').textContent = initials;
+                } catch (e) {
+                    console.error("Error loading MFG EOM data:", e);
+                }
+            } else {
+                // Fallback check on legacy key
+                const legacyEom = localStorage.getItem('vibe_current_eom');
+                if (legacyEom && (legacyEom === 'Alicia Wong' || legacyEom === 'Marcus Johnson')) {
+                    document.getElementById('eom-name').textContent = legacyEom;
+                    const initials = legacyEom.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                    document.getElementById('eom-avatar').textContent = initials;
+                    if (legacyEom === 'Alicia Wong') {
+                        document.getElementById('eom-role').textContent = 'Shift Supervisor';
+                        document.getElementById('eom-quote').textContent = '"Reduced stamping shop downtime by 14.5% during assembly trials."';
+                    } else if (legacyEom === 'Marcus Johnson') {
+                        document.getElementById('eom-role').textContent = 'Plant Manager';
+                        document.getElementById('eom-quote').textContent = '"Coordinated cross-functional transition for Munich Engine Hub platform."';
+                    }
                 }
             }
+
+            // Check for CEO notifications
+            checkCEOMessages();
         });
+
+        async function checkCEOMessages() {
+            const userSession = sessionStorage.getItem('vibe_user');
+            if (!userSession) return;
+            const user = JSON.parse(userSession);
+            if (!user.email) return;
+
+            try {
+                if (window.supabaseInit) {
+                    await window.supabaseInit;
+                }
+                const client = window.supabaseClient;
+                if (!client) return;
+
+                // Query activity_logs for unread CEO messages
+                const { data, error } = await client
+                    .from('activity_logs')
+                    .select('*')
+                    .eq('action_type', 'CEO_DIRECT_MESSAGE')
+                    .order('timestamp', { ascending: false });
+
+                if (error) throw error;
+                if (!data) return;
+
+                // Find the latest unread message for this user
+                const messageRecord = data.find(msg => 
+                    msg.new_values && 
+                    msg.new_values.recipient_email && 
+                    msg.new_values.recipient_email.toLowerCase() === user.email.toLowerCase() && 
+                    !msg.new_values.read_status
+                );
+
+                if (messageRecord) {
+                    const modal = document.getElementById('ceo-message-modal');
+                    const textEl = document.getElementById('ceo-message-text');
+                    const btn = document.getElementById('ceo-modal-acknowledge-btn');
+
+                    if (modal && textEl && btn) {
+                        textEl.textContent = messageRecord.action_description;
+                        modal.style.display = 'flex';
+                        // Force reflow
+                        modal.offsetHeight;
+                        modal.classList.add('active');
+
+                        btn.addEventListener('click', async () => {
+                            btn.disabled = true;
+                            btn.textContent = 'Acknowledging...';
+                            
+                            try {
+                                const updatedValues = { ...messageRecord.new_values, read_status: true };
+                                const { error: updateErr } = await client
+                                    .from('activity_logs')
+                                    .update({ new_values: updatedValues })
+                                    .eq('id', messageRecord.id);
+
+                                if (updateErr) throw updateErr;
+
+                                // Fade out
+                                modal.classList.remove('active');
+                                setTimeout(() => {
+                                    modal.style.display = 'none';
+                                }, 500);
+                            } catch (err) {
+                                console.error("Failed to mark message as read:", err);
+                                modal.classList.remove('active');
+                                setTimeout(() => {
+                                    modal.style.display = 'none';
+                                }, 500);
+                            }
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error in checkCEOMessages:", err);
+            }
+        }
 
         function launchMFG() {
             window.location.href = 'AutoMFG/index.html';

@@ -245,138 +245,36 @@ if (loginForm && loginError) {
             let profile = null;
             let department = null;
             let userId = null;
-            
-            const isMFG = emailInput.endsWith('@automfg.io') || emailInput.includes('automfg.io');
 
-            if (isMFG) {
-                department = 'MFG';
-                const EMAIL_ROLE_MAP = {
-                    'prod.manager': 'production_manager',
-                    'shift.super': 'shift_supervisor',
-                    'line.leader': 'line_leader',
-                    'mach.operator': 'machine_operator',
-                    'prod.planner': 'production_planner',
-                    'maint.tech': 'maintenance_tech',
-                    'qual.inspector': 'quality_inspector',
-                    'plant.manager': 'plant_manager',
-                    'sys.admin': 'sys_admin'
-                };
-                const EMAIL_DISPLAY_MAP = {
-                    'prod.manager': { name: 'Production Manager', roleLabel: 'Production Manager', plant: 'Plant A', seedPass: 'Prod1234' },
-                    'shift.super': { name: 'Shift Supervisor', roleLabel: 'Shift Supervisor', plant: 'Plant A', seedPass: 'Shift123' },
-                    'line.leader': { name: 'Line Leader', roleLabel: 'Line Leader', plant: 'Plant A', seedPass: 'Line1234' },
-                    'mach.operator': { name: 'Machine Operator', roleLabel: 'Machine Operator', plant: 'Plant A', seedPass: 'Mach1234' },
-                    'prod.planner': { name: 'Production Planner', roleLabel: 'Production Planner', plant: 'Plant A', seedPass: 'Plan1234' },
-                    'maint.tech': { name: 'Maintenance Tech', roleLabel: 'Maintenance Tech', plant: 'Plant A', seedPass: 'Main1234' },
-                    'qual.inspector': { name: 'Quality Inspector', roleLabel: 'Quality Inspector', plant: 'Plant A', seedPass: 'Qual1234' },
-                    'plant.manager': { name: 'Plant Manager', roleLabel: 'Plant Manager', plant: 'Plant A', seedPass: 'Plant123' },
-                    'sys.admin': { name: 'System Admin', roleLabel: 'System Admin', plant: 'Plant A', seedPass: 'Admin123' }
-                };
+            const supabaseUrl = window.supabaseClient?.supabaseUrl || 'https://smkgmfgbuioclfbuuynl.supabase.co';
+            const supabaseKey = window.supabaseClient?.supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNta2dtZmdidWlvY2xmYnV1eW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjM4OTUsImV4cCI6MjA5NDM5OTg5NX0.FSjVcb6aR5nFaspS4M29YHDSB7QKxVyvYOkB_IN_lh4';
 
-                const prefix = localPart;
-                const role = EMAIL_ROLE_MAP[prefix] || 'machine_operator';
-                const display = EMAIL_DISPLAY_MAP[prefix] || { name: prefix.toUpperCase(), roleLabel: role, plant: 'Plant A', seedPass: 'admin123' };
-                
-                profile = {
-                    name: display.name,
-                    role: display.roleLabel,
-                    full_name: display.name,
-                    plant: display.plant
-                };
-                
-                // Try to authenticate with Supabase Auth behind the scenes for permissions
-                try {
-                    let authRes = await window.supabaseClient.auth.signInWithPassword({
-                        email: emailInput,
-                        password: 'admin123'
-                    });
-                    
-                    if (authRes.error && display.seedPass !== 'admin123') {
-                        authRes = await window.supabaseClient.auth.signInWithPassword({
-                            email: emailInput,
-                            password: display.seedPass
-                        });
+            // A. Check users1 table (SCM)
+            try {
+                const response = await fetch(`${supabaseUrl}/rest/v1/users1?email=eq.${encodeURIComponent(emailInput)}&select=*`, {
+                    headers: {
+                        'apikey': supabaseKey
                     }
-                    
-                    if (!authRes.error && authRes.data?.user) {
-                        userId = authRes.data.user.id;
-                        console.log("Logged in MFG staff to Supabase Auth:", emailInput);
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        const scmProfile = data[0];
+                        scmProfile.id = scmProfile.id || 'temp-id';
+                        profile = scmProfile;
+                        department = 'SCM';
+                        userId = scmProfile.id;
+                        console.log("Logged in SCM staff from users1 table:", emailInput);
                     }
-                } catch (authErr) {
-                    console.warn("MFG Supabase Auth failed, using mock auth session:", authErr);
                 }
-                
-                userId = userId || ('mfg-' + prefix);
-                
-                // Set Zustand localStorage state for AutoMFG React App
-                localStorage.setItem('automfg-auth', JSON.stringify({
-                    state: {
-                        user: {
-                            id: userId,
-                            name: display.name,
-                            username: prefix,
-                            role: role,
-                            roleLabel: display.roleLabel,
-                            plant: display.plant,
-                            email: emailInput
-                        },
-                        isAuthenticated: true,
-                        sessionId: null
-                    },
-                    version: 2
-                }));
+            } catch (scmQueryErr) {
+                console.warn("Direct query of users1 failed:", scmQueryErr);
             }
 
+            // B. Check users table (R&D / AutoDev)
             if (!profile) {
                 try {
-                    const supabaseUrl = window.supabaseClient?.supabaseUrl || 'https://smkgmfgbuioclfbuuynl.supabase.co';
-                    const supabaseKey = window.supabaseClient?.supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNta2dtZmdidWlvY2xmYnV1eW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjM4OTUsImV4cCI6MjA5NDM5OTg5NX0.FSjVcb6aR5nFaspS4M29YHDSB7QKxVyvYOkB_IN_lh4';
-                    
-                    const response = await fetch(`${supabaseUrl}/rest/v1/users1?email=eq.${encodeURIComponent(emailInput)}&select=*`, {
-                        headers: {
-                            'apikey': supabaseKey
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data && data.length > 0) {
-                            const scmProfile = data[0];
-                            scmProfile.id = scmProfile.id || 'temp-id';
-                            profile = scmProfile;
-                            department = 'SCM';
-                            userId = scmProfile.id;
-                            console.log("Logged in SCM staff from users1 table:", emailInput);
-                        }
-                    }
-                } catch (scmQueryErr) {
-                    console.warn("Direct query of users1 failed, falling back to Auth:", scmQueryErr);
-                }
-            }
-            
-            // If not SCM or MFG, perform standard Supabase Auth signInWithPassword (for AutoDev / R&D staff)
-            if (!profile) {
-                try {
-                    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-                        email: emailInput,
-                        password: passwordInput
-                    });
-                    
-                    if (!error && data.user) {
-                        userId = data.user.id;
-                        console.log("Logged in R&D staff to Supabase Auth:", emailInput);
-                    } else {
-                        console.warn("Supabase Auth signin failed for R&D:", error?.message);
-                    }
-                } catch (authErr) {
-                    console.warn("Supabase Auth signin failed for R&D:", authErr);
-                }
-
-                // Query the users table for profile information
-                try {
-                    const supabaseUrl = window.supabaseClient?.supabaseUrl || 'https://smkgmfgbuioclfbuuynl.supabase.co';
-                    const supabaseKey = window.supabaseClient?.supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNta2dtZmdidWlvY2xmYnV1eW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjM4OTUsImV4cCI6MjA5NDM5OTg5NX0.FSjVcb6aR5nFaspS4M29YHDSB7QKxVyvYOkB_IN_lh4';
-                    
                     const response = await fetch(`${supabaseUrl}/rest/v1/users?email=eq.${encodeURIComponent(emailInput)}&select=*`, {
                         headers: {
                             'apikey': supabaseKey
@@ -389,58 +287,110 @@ if (loginForm && loginError) {
                             const devProfile = data[0];
                             profile = devProfile;
                             department = 'R&D';
-                            userId = userId || devProfile.id;
+                            userId = devProfile.id;
                             console.log("Retrieved R&D profile from users table:", emailInput);
                         }
                     }
                 } catch (devQueryErr) {
                     console.warn("Direct query of users table failed:", devQueryErr);
                 }
+            }
 
-                // Fallback to user_profiles if profile still not found but userId is set
-                if (!profile && userId) {
-                    try {
-                        const { data: devProfile } = await window.supabaseClient
-                            .from('user_profiles')
-                            .select('*')
-                            .eq('id', userId)
-                            .maybeSingle();
-                            
-                        if (devProfile) {
-                            profile = devProfile;
-                            department = 'R&D';
+            // C. Check erp_users table (SCM / MFG / EXECUTIVE)
+            if (!profile) {
+                try {
+                    const response = await fetch(`${supabaseUrl}/rest/v1/erp_users?email=eq.${encodeURIComponent(emailInput)}&select=*`, {
+                        headers: {
+                            'apikey': supabaseKey
                         }
-                    } catch (queryErr) {
-                        console.warn("Profile query from user_profiles failed:", queryErr);
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0) {
+                            const erpProfile = data[0];
+                            profile = erpProfile;
+                            userId = erpProfile.id;
+                            
+                            // Classify department based on erp_user fields
+                            if (erpProfile.department === 'EXECUTIVE' || erpProfile.role === 'CEO') {
+                                department = 'EXECUTIVE';
+                            } else if (erpProfile.role?.toLowerCase().includes('mfg') || 
+                                       erpProfile.role?.toLowerCase().includes('assembly') || 
+                                       erpProfile.role?.toLowerCase().includes('plant') || 
+                                       erpProfile.role?.toLowerCase().includes('shift')) {
+                                department = 'MFG';
+                            } else {
+                                department = 'SCM';
+                            }
+                            console.log("Retrieved ERP profile from erp_users table:", emailInput);
+                        }
                     }
+                } catch (erpQueryErr) {
+                    console.warn("Direct query of erp_users table failed:", erpQueryErr);
                 }
             }
             
-            // Fallback heuristics if profile is not found in either table
+            // D. Validate against Mock Whitelist Registry
             if (!profile) {
-                const emailLower = emailInput.toLowerCase();
-                if (emailLower.includes('procurement') || emailLower.includes('supplier')) {
-                    department = 'SCM';
-                    profile = { full_name: localPart.toUpperCase(), role: 'SCM Specialist' };
-                } else if (emailLower.includes('automfg') || emailLower.includes('mfg') || emailLower.endsWith('@automfg.io')) {
-                    department = 'MFG';
-                    profile = { full_name: localPart.toUpperCase(), role: 'MFG Specialist' };
+                const MOCK_STAFF = [
+                    { email: 's.chen@vibe.com', department: 'R&D', full_name: 'Sarah Chen', role: 'Lead Thermal Engineer' },
+                    { email: 'd.reyes@vibe.com', department: 'R&D', full_name: 'David Reyes', role: 'Junior CAD Designer' },
+                    { email: 'm.johnson@automfg.io', department: 'MFG', full_name: 'Marcus Johnson', role: 'Plant Manager', plant: 'Plant A' },
+                    { email: 'a.wong@automfg.io', department: 'MFG', full_name: 'Alicia Wong', role: 'Shift Supervisor', plant: 'Plant A' },
+                    { email: 'l.kinsley@vibe.com', department: 'SCM', full_name: 'Liam Kinsley', role: 'Logistics Head' },
+                    { email: 'ceo@vibe.com', department: 'EXECUTIVE', full_name: 'VIBE CEO', role: 'CEO' },
+                    // Common whitelisted MFG accounts
+                    { email: 'prod.manager@automfg.io', department: 'MFG', full_name: 'Production Manager', role: 'Production Manager', plant: 'Plant A' },
+                    { email: 'shift.super@automfg.io', department: 'MFG', full_name: 'Shift Supervisor', role: 'Shift Supervisor', plant: 'Plant A' },
+                    { email: 'line.leader@automfg.io', department: 'MFG', full_name: 'Line Leader', role: 'Line Leader', plant: 'Plant A' },
+                    { email: 'mach.operator@automfg.io', department: 'MFG', full_name: 'Machine Operator', role: 'Machine Operator', plant: 'Plant A' },
+                    { email: 'prod.planner@automfg.io', department: 'MFG', full_name: 'Production Planner', role: 'Production Planner', plant: 'Plant A' },
+                    { email: 'maint.tech@automfg.io', department: 'MFG', full_name: 'Maintenance Tech', role: 'Maintenance Tech', plant: 'Plant A' },
+                    { email: 'qual.inspector@automfg.io', department: 'MFG', full_name: 'Quality Inspector', role: 'Quality Inspector', plant: 'Plant A' },
+                    { email: 'plant.manager@automfg.io', department: 'MFG', full_name: 'Plant Manager', role: 'Plant Manager', plant: 'Plant A' },
+                    { email: 'sys.admin@automfg.io', department: 'MFG', full_name: 'System Admin', role: 'System Admin', plant: 'Plant A' }
+                ];
+
+                const matchedMock = MOCK_STAFF.find(emp => emp.email.toLowerCase() === emailInput);
+                if (matchedMock) {
+                    profile = {
+                        full_name: matchedMock.full_name,
+                        role: matchedMock.role,
+                        plant: matchedMock.plant || 'Plant A'
+                    };
+                    department = matchedMock.department;
+                    userId = 'mock-' + localPart;
+                    console.log("Logged in using fallback mock registry:", emailInput);
                 } else {
-                    department = 'R&D';
-                    profile = { full_name: localPart.toUpperCase(), role: 'R&D Engineer' };
+                    throw new Error("Access Denied. Email address is not registered in the VIBE staff directory.");
                 }
             }
 
+            // Post-Auth Zustand synchronizer for MFG users
             if (department === 'MFG') {
+                const EMAIL_ROLE_MAP = {
+                    'prod.manager': 'production_manager',
+                    'shift.super': 'shift_supervisor',
+                    'line.leader': 'line_leader',
+                    'mach.operator': 'machine_operator',
+                    'prod.planner': 'production_planner',
+                    'maint.tech': 'maintenance_tech',
+                    'qual.inspector': 'quality_inspector',
+                    'plant.manager': 'plant_manager',
+                    'sys.admin': 'sys_admin'
+                };
+                const roleKey = EMAIL_ROLE_MAP[localPart] || 'machine_operator';
+
                 localStorage.setItem('automfg-auth', JSON.stringify({
                     state: {
                         user: {
                             id: userId || 'mfg-temp',
                             name: profile.name || profile.full_name || localPart.toUpperCase(),
                             username: localPart,
-                            role: 'machine_operator',
-                            roleLabel: 'Machine Operator',
-                            plant: 'Plant A',
+                            role: roleKey,
+                            roleLabel: profile.role || 'Machine Operator',
+                            plant: profile.plant || 'Plant A',
                             email: emailInput
                         },
                         isAuthenticated: true,
