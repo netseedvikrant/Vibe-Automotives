@@ -313,12 +313,15 @@ function RCATrackerTab({ rcas, loading, onUpdateCAStatus }) {
   );
 }
 
+import { PART_BOM_MAPPING, createScrapCertificate } from '../lib/dbIntegration';
+
 export default function ScrapRework() {
   const { user } = useAuthStore();
   const [defects, setDefects] = useState([]);
   const [rcas, setRcas] = useState([]);
   const [reworkOrders, setReworkOrders] = useState([]);
   const [operators, setOperators] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [rcaLoading, setRcaLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('defects');
@@ -326,18 +329,37 @@ export default function ScrapRework() {
   const [rcaTarget, setRcaTarget] = useState(null);
   const [scrapCostTarget, setScrapCostTarget] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
+  const [inventoryImpactLogs, setInventoryImpactLogs] = useState([]);
+  const [selectedReworkOrder, setSelectedReworkOrder] = useState(null);
+  const [inventoryImpact, setInventoryImpact] = useState([]);
+
+  const isMock = (str) => {
+    if (!str) return false;
+    const s = String(str).toUpperCase();
+    return (
+      s.includes('WBS3R9C57FK999001') ||
+      s.includes('WBS3R9C57FK999002') ||
+      s.includes('WBS3R9C57FK999010') ||
+      s.includes('BMW-M4-DOOR-LH') ||
+      s.includes('WO-2024-0001') ||
+      s.includes('WO-2024-0003') ||
+      s.includes('WO-20260520-0001') ||
+      s.includes('WO-20260521-0005') ||
+      s.includes('CP-001') ||
+      s.includes('SURFACE SCRATCH') ||
+      s.includes('MATERIAL CRACK') ||
+      s.includes('MOCKREWORK') ||
+      s.includes('MOCKSCRAP') ||
+      s.includes('SAMPLEREWORK') ||
+      s.includes('DEMOREWORK')
+    );
+  };
 
   const getParetoData = () => {
     const groups = {};
     let totalQty = 0;
     
-    const sourceData = defects.length > 0 ? defects : [
-      { defect_type: 'Surface Scratch', qty: 15 },
-      { defect_type: 'Dimensional OOT', qty: 10 },
-      { defect_type: 'Porosity', qty: 6 },
-      { defect_type: 'Color Deviation', qty: 4 },
-      { defect_type: 'Weld Crack', qty: 2 }
-    ];
+    const sourceData = defects;
 
     sourceData.forEach(d => {
       const type = d.defect_type || 'Unknown / General';
@@ -378,12 +400,14 @@ export default function ScrapRework() {
           logged_at,
           logged_by,
           defect_type,
+          supplier_id,
           scrap_certificates ( cost_impact )
         `)
         .order('logged_at', { ascending: false });
 
       if (error) throw error;
-      setDefects(data || []);
+      const clean = (data || []).filter(d => !isMock(d.wo_number) && !isMock(d.defect_type));
+      setDefects(clean);
     } catch (e) {
       toast.error('Failed to load defects: ' + e.message);
     } finally {
@@ -410,21 +434,109 @@ export default function ScrapRework() {
     try {
       const { data } = await supabase
         .from('rework_orders')
-        .select('*, defect_records(*)')
+        .select('*, defect_records(*, work_orders(part_number))')
         .order('start_time', { ascending: false, nullsFirst: true });
-      if (data) setReworkOrders(data);
+      if (data) {
+        const clean = data.filter(r => r.defect_records && !isMock(r.defect_records.wo_number) && !isMock(r.defect_records.defect_type));
+        setReworkOrders(clean);
+        
+        // Keep selectedReworkOrder reference fresh
+        if (selectedReworkOrder) {
+          setSelectedReworkOrder(prev => {
+            if (!prev) return null;
+            return clean.find(r => r.rework_id === prev.rework_id) || prev;
+          });
+        }
+      }
     } catch (e) {
       console.warn('[ScrapRework] Rework fetch error:', e.message);
     }
   };
 
   const fetchOperators = async () => {
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) {
+      const mockOps = [
+        { id: '4', display_name: 'Machine Operator', username: 'mach.operator', role: 'machine_operator' },
+        { id: '6', display_name: 'Maintenance Tech', username: 'maint.tech', role: 'maintenance_tech' },
+        { id: '3', display_name: 'Line Leader', username: 'line.leader', role: 'line_leader' }
+      ];
+      setOperators(mockOps);
+      return;
+    }
+
     try {
-      const { data } = await supabase.from('profiles').select('id, display_name, username').order('display_name');
-      if (data) setOperators(data);
+      // Step 1 & 2: Fetch profiles and user_roles separately
+      const { data: profiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (profErr) throw profErr;
+
+      const { data: userRoles, error: rolesErr } = await supabase
+        .from('user_roles')
+        .select('user_id, roles(role_name)');
+
+      if (rolesErr) throw rolesErr;
+
+      // Step 3: Join in JS
+      const joinedUsers = (profiles || []).map(p => {
+        const matchingRole = (userRoles || []).find(ur => ur.user_id === p.id);
+        const roleName = matchingRole?.roles?.role_name || '';
+        return {
+          ...p,
+          role: roleName
+        };
+      });
+
+      // Update name lookup map
+      setAllUsers(joinedUsers.map(u => ({
+        id: u.id,
+        full_name: u.display_name || u.username || 'Unnamed User',
+        username: u.username,
+        role: u.role
+      })));
+
+      // Step 4: Filter by eligible roles
+      const allowedReworkRoles = [
+        'machine_operator', 'operator', 'line_operator', 'rework_operator',
+        'technician', 'maintenance_technician', 'quality_operator', 'shop_floor_operator',
+        'line_leader', 'maintenance_tech', 'assembly_operator', 'production_operator',
+        'quality_technician', 'machine operator', 'rework operator', 'assembly operator',
+        'production operator', 'line operator', 'maintenance technician', 'quality technician',
+        'Machine Operator', 'Maintenance Tech', 'Line Leader'
+      ].map(r => r.toLowerCase().trim());
+
+      let filtered = joinedUsers.filter(u => {
+        const role = (u.role || '').toLowerCase().trim();
+        return allowedReworkRoles.includes(role);
+      });
+
+      // Step 5: Safe Plant/Shift Filter
+      if (user?.plant && user.plant !== 'All' && user.plant !== 'All Plants') {
+        filtered = filtered.filter(op => {
+          // If the database user doesn't have a plant assigned, do not hide them
+          return !op.plant || op.plant === user.plant;
+        });
+      }
+
+      // Step 9: Temporary Debug Logs
+      console.log("All profiles fetched:", profiles);
+      console.log("User roles fetched:", userRoles);
+      console.log("Joined users:", joinedUsers);
+      console.log("Allowed rework roles:", allowedReworkRoles);
+      console.log("Filtered operators:", filtered);
+
+      const mappedOps = filtered.map(u => ({
+        id: u.id,
+        display_name: u.display_name || u.username || 'Unnamed User',
+        username: u.username,
+        role: u.role
+      }));
+
+      setOperators(mappedOps);
     } catch (e) {
       console.warn('[ScrapRework] Operators fetch error:', e.message);
+      setOperators([]);
     }
   };
 
@@ -438,13 +550,123 @@ export default function ScrapRework() {
     }
   };
 
+  const fetchInventoryImpactLogs = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .not('defect_id', 'is', null)
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch inventory impact logs:', error);
+        return;
+      }
+
+      console.log('Inventory records from Supabase:', data);
+      setInventoryImpactLogs(data || []);
+    } catch (e) {
+      console.warn('[ScrapRework] Inventory impact fetch error:', e.message);
+    }
+  };
+
+  const fetchInventoryImpact = async (reworkOrder) => {
+    if (!reworkOrder || !isSupabaseConfigured()) {
+      setInventoryImpact([]);
+      return;
+    }
+    try {
+      const partNumber = reworkOrder.defect_records?.work_orders?.part_number || reworkOrder.defect_records?.wo_number || 'BMW-M4-DOOR-LH';
+      const qty = reworkOrder.defect_records?.qty || 1;
+      const materials = PART_BOM_MAPPING[partNumber] || PART_BOM_MAPPING['BMW-M4-DOOR-LH'] || [];
+      const partCodes = materials.map(m => m.part_code);
+      if (partNumber && !partCodes.includes(partNumber)) {
+        partCodes.push(partNumber);
+      }
+
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .in('part_code', partCodes);
+
+      if (error) {
+        console.error('Failed to fetch inventory impact:', error);
+        return;
+      }
+
+      const mapped = (data || []).map(item => {
+        const bomItem = materials.find(m => m.part_code === item.part_code);
+        const reqQty = bomItem ? (bomItem.qty_per_product * qty) : qty;
+        return {
+          ...item,
+          required_qty: reqQty
+        };
+      });
+
+      setInventoryImpact(mapped);
+    } catch (e) {
+      console.warn('[ScrapRework] fetchInventoryImpact error:', e.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!selectedReworkOrder) {
+      setInventoryImpact([]);
+      return;
+    }
+
+    fetchInventoryImpact(selectedReworkOrder);
+
+    const channel = supabase
+      .channel('rework_inventory_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory'
+        },
+        () => {
+          fetchInventoryImpact(selectedReworkOrder);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedReworkOrder]);
+
   const fetchAll = async () => {
     setLoading(true);
-    await Promise.all([fetchDefectRegister(), fetchRCAs(), fetchReworkOrders(), fetchOperators(), fetchSuppliers()]);
+    await Promise.all([
+      fetchDefectRegister(),
+      fetchRCAs(),
+      fetchReworkOrders(),
+      fetchOperators(),
+      fetchSuppliers(),
+      fetchInventoryImpactLogs()
+    ]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
+
+    const channel = supabase
+      .channel('scrap_rework_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'defect_records' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'root_cause_analyses' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'corrective_actions' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rework_orders' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, fetchInventoryImpactLogs)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleUpdateDisposition = async (defectId, disposition, cost = 0, supplierId = null) => {
     if (!isSupabaseConfigured()) {
@@ -466,46 +688,18 @@ export default function ScrapRework() {
       if (error) throw error;
 
       if (disposition === 'scrap') {
-        await supabase.from('scrap_certificates').insert({
-          defect_id: defectId,
-          cost_impact: cost,
-          issued_by: safeUUID(user?.id),
-          issued_at: new Date().toISOString(),
-        });
+        const { data: defObj } = await supabase
+          .from('defect_records')
+          .select('*, work_orders(*)')
+          .eq('defect_id', defectId)
+          .single();
 
-        // Bridge 3: Scrap-to-CAPA Flow
-        if (supplierId) {
-          // Fetch all scrap defects for this supplier to recalculate Quality Score
-          const { data: supplierScraps } = await supabase
-            .from('defect_records')
-            .select('defect_id')
-            .eq('supplier_id', supplierId)
-            .eq('disposition', 'scrap');
+        const vin = defObj?.work_orders?.vin || defObj?.wo_number || 'VIN-TEMP';
+        const part = defObj?.work_orders?.part_number || defObj?.wo_number || 'PART-TEMP';
+        const materials = PART_BOM_MAPPING[part] || (PART_BOM_MAPPING['BMW-M4-DOOR-LH'] ? PART_BOM_MAPPING['BMW-M4-DOOR-LH'] : []);
+        const mappedMaterials = materials.map(m => ({ ...m, quantity: (m.qty_per_product || 1) * (defObj?.qty || 1) }));
 
-          const scrapCount = supplierScraps ? supplierScraps.length : 0;
-          const newScore = Math.max(0, 100 - (scrapCount * 5));
-
-          // Update supplier's quality score in suppliers table
-          await supabase
-            .from('suppliers')
-            .update({ quality_score: newScore })
-            .eq('supplier_id', supplierId);
-
-          // If Quality Score falls below 90%, generate CAPA notification
-          if (newScore < 90) {
-            const supplierObj = suppliers.find(s => s.supplier_id === supplierId);
-            const supplierName = supplierObj ? supplierObj.supplier_name : 'Unknown Supplier';
-
-            await supabase.from('notifications').insert({
-              user_role: 'supplier_quality_engineer',
-              title: `CAPA Required: ${supplierName}`,
-              message: `Quality Score for ${supplierName} has dropped to ${newScore}%. Immediate corrective action is required.`,
-              priority: 'High',
-              read_status: false
-            });
-            toast.success(`CAPA notification triggered for SQE (Quality Score: ${newScore}%)`);
-          }
-        }
+        await createScrapCertificate(defectId, vin, mappedMaterials, cost, !!supplierId, supplierId);
       }
 
       if (disposition === 'rework') {
@@ -523,6 +717,48 @@ export default function ScrapRework() {
       }
 
       if (safeUUID(user?.id)) writeAuditLog(safeUUID(user.id), 'defect_records', 'update', { defect_id: defectId, disposition, supplier_id: supplierId });
+
+      if (disposition === 'scrap' || disposition === 'rework') {
+        const { data: defectData } = await supabase
+          .from('defect_records')
+          .select('*')
+          .eq('defect_id', defectId)
+          .maybeSingle();
+
+        if (defectData) {
+          const { data: existingImpact } = await supabase
+            .from('inventory')
+            .select('inventory_id')
+            .eq('defect_id', defectId)
+            .maybeSingle();
+
+          if (!existingImpact) {
+            const unitCost = disposition === 'scrap' ? (cost > 0 && defectData.qty > 0 ? cost / defectData.qty : 1500) : 1200;
+            const totalCost = disposition === 'scrap' ? cost : (defectData.qty * unitCost);
+
+            const { error: insErr } = await supabase.from('inventory').insert({
+              defect_id: defectId,
+              wo_number: defectData.wo_number,
+              material_name: defectData.defect_type || 'Defected Part',
+              part_code: 'SCR-' + defectId.slice(0, 8),
+              scrap_qty: Number(defectData.qty || 0),
+              deducted_qty: Number(defectData.qty || 0),
+              unit_cost: Number(unitCost),
+              total_cost: Number(totalCost),
+              supplier_defect: !!supplierId,
+              ncr_generated: supplierId ? `NCR-${Math.floor(1000 + Math.random() * 9000)}` : null,
+              replenishment_status: 'PENDING',
+              source_module: 'AutoMFG',
+              linked_module: 'ScrapRework',
+              updated_at: new Date().toISOString()
+            });
+            if (insErr) {
+              console.error('Failed to insert inventory impact:', insErr);
+            }
+          }
+        }
+      }
+
       toast.success(`Disposition set: ${disposition.toUpperCase()}`);
       fetchAll();
     } catch (err) {
@@ -540,15 +776,20 @@ export default function ScrapRework() {
     }
   };
 
-  // ─── Rework Order updates ──────────────────────────────────────────────────
   const handleAssignRework = async (reworkId, operatorId) => {
     if (!isSupabaseConfigured()) return;
-    const { error } = await supabase.from('rework_orders').update({ assigned_operator: safeUUID(operatorId) }).eq('rework_id', reworkId);
+    const { error } = await supabase
+      .from('rework_orders')
+      .update({
+        assigned_operator: safeUUID(operatorId),
+        status: operatorId ? 'assigned' : 'open'
+      })
+      .eq('rework_id', reworkId);
     if (!error) {
       toast.success('Operator assigned');
       fetchReworkOrders();
     } else {
-      toast.error('Failed to assign operator');
+      toast.error('Failed to assign operator: ' + error.message);
     }
   };
 
@@ -565,7 +806,6 @@ export default function ScrapRework() {
     if (!isSupabaseConfigured()) return;
     const { error } = await supabase.from('rework_orders').update({ status: 'completed', end_time: new Date().toISOString() }).eq('rework_id', reworkId);
     if (!error) {
-      // Automatically resolve disposition back to PASS or Rework-resolved
       await supabase.from('defect_records').update({ disposition: 'pending' }).eq('defect_id', defectId);
       toast.success('Rework completed');
       fetchAll();
@@ -616,6 +856,7 @@ export default function ScrapRework() {
           { id: 'defects', label: 'Defect Register' },
           { id: 'rework', label: `Rework Orders (${reworkOrders.filter(r => ['open', 'in_progress'].includes(r.status)).length})` },
           { id: 'rca', label: 'RCA Tracker' },
+          { id: 'inventory_impact', label: 'Inventory Impact' },
           { id: 'pareto', label: 'Pareto Analysis' }
         ].map((t) => (
           <button key={t.id} className={`tab-btn ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
@@ -640,7 +881,7 @@ export default function ScrapRework() {
               <tbody>
                 {loading ? <tr><td colSpan={6} style={{ textAlign: 'center' }}>Loading...</td></tr> :
                   filtered.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>No defects found</td></tr>
+                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>No defects registered.</td></tr>
                   ) :
                   filtered.map((def) => (
                     <tr key={def.defect_id}>
@@ -681,73 +922,247 @@ export default function ScrapRework() {
       )}
 
       {activeTab === 'rework' && (
-        <div className="card">
-          <div className="card-header"><span className="card-title">Rework Order Tracking</span></div>
-          <div className="table-wrapper">
-            <table>
-              <thead><tr><th>Rework ID</th><th>Defect Info</th><th>Assigned Operator</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody>
-                {reworkOrders.length === 0 ? (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>No rework orders</td></tr>
-                ) : reworkOrders.map((ro) => {
-                  const isOpen = ro.status === 'open';
-                  const isInProgress = ro.status === 'in_progress';
-                  return (
-                    <tr key={ro.rework_id}>
-                      <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)' }}>{ro.rework_id?.slice(0, 8)}</td>
-                      <td>
-                        <div style={{ fontFamily: 'var(--font-heading)', fontSize: 12, color: 'var(--white)' }}>WO: {ro.defect_records?.wo_number}</div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-secondary)' }}>{ro.defect_records?.defect_type} ({ro.defect_records?.qty} units)</div>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                          <span style={{ fontSize: 12 }}>
-                            {operators.find((op) => op.id === ro.assigned_operator)?.display_name || 'Unassigned'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card">
+            <div className="card-header"><span className="card-title">Rework Order Tracking</span></div>
+            <div className="table-wrapper">
+              <table>
+                <thead><tr><th>Rework ID</th><th>Defect Info</th><th>Assigned Operator</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {reworkOrders.length === 0 ? (
+                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>No rework orders available.</td></tr>
+                  ) : reworkOrders.map((ro) => {
+                    const isOpen = ro.status === 'open';
+                    const isInProgress = ro.status === 'in_progress';
+                    const isSelected = selectedReworkOrder?.rework_id === ro.rework_id;
+                    return (
+                      <tr 
+                        key={ro.rework_id} 
+                        onClick={() => setSelectedReworkOrder(ro)}
+                        style={{ 
+                          cursor: 'pointer', 
+                          backgroundColor: isSelected ? 'rgba(28, 105, 212, 0.15)' : 'transparent',
+                          transition: 'background-color 0.2s ease'
+                        }}
+                      >
+                        <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)' }}>{ro.rework_id?.slice(0, 8)}</td>
+                        <td>
+                          <div style={{ fontFamily: 'var(--font-heading)', fontSize: 12, color: 'var(--white)' }}>WO: {ro.defect_records?.wo_number}</div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-secondary)' }}>{ro.defect_records?.defect_type} ({ro.defect_records?.qty} units)</div>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            <span style={{ fontSize: 12 }}>
+                              {allUsers.find((u) => u.id === ro.assigned_operator)?.full_name || operators.find((op) => op.id === ro.assigned_operator)?.display_name || 'Unassigned'}
+                            </span>
+                            {(isOpen || ro.status === 'assigned' || isInProgress) && (
+                              <select
+                                style={{ width: 120, fontSize: 10, padding: '2px 4px' }}
+                                className="form-select"
+                                value={ro.assigned_operator || ''}
+                                onChange={(e) => handleAssignRework(ro.rework_id, e.target.value)}
+                              >
+                                <option value="">Assign...</option>
+                                {operators.length === 0 ? (
+                                  <option disabled value="">No eligible operators found. Check users table roles/RLS.</option>
+                                ) : (
+                                  operators.map((op) => (
+                                    <option key={op.id} value={op.id}>
+                                      {op.display_name} — {op.role}
+                                    </option>
+                                  ))
+                                )}
+                              </select>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${ro.status === 'completed' ? 'badge-green' : ro.status === 'in_progress' ? 'badge-blue' : ro.status === 'failed' ? 'badge-red' : 'badge-amber'}`}>
+                            {ro.status?.toUpperCase()}
                           </span>
-                          {(isOpen || isInProgress) && (
-                            <select
-                              style={{ width: 120, fontSize: 10, padding: '2px 4px' }}
-                              className="form-select"
-                              value={ro.assigned_operator || ''}
-                              onChange={(e) => handleAssignRework(ro.rework_id, e.target.value)}
-                            >
-                              <option value="">Assign...</option>
-                              {operators.map((op) => (
-                                <option key={op.id} value={op.id}>{op.display_name}</option>
-                              ))}
-                            </select>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`badge ${ro.status === 'completed' ? 'badge-green' : ro.status === 'in_progress' ? 'badge-blue' : ro.status === 'failed' ? 'badge-red' : 'badge-amber'}`}>
-                          {ro.status?.toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          {isOpen && ro.assigned_operator && (
-                            <button className="btn btn-sm btn-primary" onClick={() => handleStartRework(ro.rework_id)}><Play size={10} /> Start</button>
-                          )}
-                          {isInProgress && (
-                            <>
-                              <button className="btn btn-sm btn-primary" onClick={() => handleCompleteRework(ro.rework_id, ro.defect_id)}><CheckCircle2 size={10} /> Complete</button>
-                              <button className="btn btn-sm btn-danger" onClick={() => handleFailRework(ro.rework_id)}><AlertOctagon size={10} /> Fail</button>
-                            </>
-                          )}
-                        </div>
-                      </td>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            {(isOpen || ro.status === 'assigned') && ro.assigned_operator && (
+                              <button className="btn btn-sm btn-primary" onClick={() => handleStartRework(ro.rework_id)}><Play size={10} /> Start</button>
+                            )}
+                            {isInProgress && (
+                              <>
+                                <button className="btn btn-sm btn-primary" onClick={() => handleCompleteRework(ro.rework_id, ro.defect_id)}><CheckCircle2 size={10} /> Complete</button>
+                                <button className="btn btn-sm btn-danger" onClick={() => handleFailRework(ro.rework_id)}><AlertOctagon size={10} /> Fail</button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Rework Inventory Impact Availability Card */}
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">Inventory Impact — Material Availability</span>
+            </div>
+            {!selectedReworkOrder ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted-text)', fontSize: 12 }}>
+                Select a rework order from the list above to view real-time inventory impact.
+              </div>
+            ) : (
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Part / Material Name</th>
+                      <th>Part Number / SKU</th>
+                      <th>Required Qty</th>
+                      <th>Available Qty</th>
+                      <th>Reserved Qty</th>
+                      <th>Stock Status</th>
+                      <th>Warehouse / Location</th>
+                      <th>Plant</th>
+                      <th>Last Updated</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {inventoryImpact.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '16px 0', color: 'var(--muted-text)', fontSize: 12 }}>
+                          No matching inventory records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      inventoryImpact.map((item) => {
+                        const available = item.available_stock || 0;
+                        const safety = item.safety_stock || 0;
+                        const isLow = available <= safety;
+                        const isCritical = available <= (safety / 2);
+                        
+                        let statusLabel = 'AVAILABLE';
+                        let statusClass = 'badge-green';
+                        if (available <= 0) {
+                          statusLabel = 'OUT OF STOCK';
+                          statusClass = 'badge-red';
+                        } else if (isCritical) {
+                          statusLabel = 'CRITICAL SHORTAGE';
+                          statusClass = 'badge-red';
+                        } else if (isLow) {
+                          statusLabel = 'LOW STOCK';
+                          statusClass = 'badge-amber';
+                        }
+
+                        return (
+                          <tr key={item.inventory_id}>
+                            <td>{item.material_name || 'N/A'}</td>
+                            <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, color: 'var(--white)' }}>
+                              {item.part_code || 'N/A'}
+                            </td>
+                            <td>{item.required_qty || 0}</td>
+                            <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, color: isLow ? 'var(--red)' : 'var(--green)' }}>
+                              {available}
+                            </td>
+                            <td>{item.reserved_stock !== null && item.reserved_stock !== undefined ? item.reserved_stock : 'N/A'}</td>
+                            <td>
+                              <span className={`badge ${statusClass}`}>
+                                {statusLabel}
+                              </span>
+                            </td>
+                            <td>{item.warehouse || 'N/A'}</td>
+                            <td>{item.plant || 'Plant A'}</td>
+                            <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                              {item.updated_at ? new Date(item.updated_at).toLocaleString() : 'N/A'}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {activeTab === 'rca' && (
         <RCATrackerTab rcas={rcas} loading={rcaLoading} onUpdateCAStatus={handleUpdateCAStatus} />
+      )}
+
+      {activeTab === 'inventory_impact' && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Scrap &amp; Rework Inventory Impact Logs</span>
+          </div>
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Defect ID</th>
+                  <th>WO Number</th>
+                  <th>Scrap Qty</th>
+                  <th>Scrap Cost</th>
+                  <th>Supplier Defect?</th>
+                  <th>NCR Generated</th>
+                  <th>Inventory Deduction</th>
+                  <th>Replenishment Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inventoryImpactLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted-text)' }}>
+                      No inventory impact records found for scrap/rework.
+                    </td>
+                  </tr>
+                ) : (
+                  inventoryImpactLogs.map((item) => {
+                    const scrapCost = item.total_cost || (Number(item.scrap_qty || 0) * Number(item.unit_cost || 0));
+                    const isSupplier = item.supplier_defect;
+                    const ncr = item.ncr_generated || (isSupplier ? 'NCR OPENED' : 'N/A');
+                    
+                    return (
+                      <tr key={item.inventory_id}>
+                        <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--white)' }}>
+                          {item.defect_id ? item.defect_id.slice(0, 8) : '—'}
+                        </td>
+                        <td style={{ fontFamily: 'var(--font-heading)', fontSize: 12 }}>{item.wo_number || '—'}</td>
+                        <td style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, color: 'var(--red)' }}>
+                          {item.scrap_qty || '—'}
+                        </td>
+                        <td style={{ color: 'var(--white)' }}>
+                          {scrapCost ? `₹${scrapCost.toLocaleString()}` : '—'}
+                        </td>
+                        <td>
+                          <span className={`badge ${isSupplier ? 'badge-amber' : 'badge-gray'}`}>
+                            {isSupplier ? 'Yes' : 'No'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ${isSupplier ? 'badge-green' : 'badge-gray'}`}>
+                            {ncr}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge badge-green">
+                            {item.deducted_qty || 0} deducted
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ${item.replenishment_status === 'COMPLETED' ? 'badge-green' : 'badge-blue'}`}>
+                            {item.replenishment_status || 'PENDING'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {activeTab === 'pareto' && (

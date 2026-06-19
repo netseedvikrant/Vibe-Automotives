@@ -4,14 +4,7 @@
 import { create } from 'zustand';
 
 // ---- Mock Data Generators ----
-const generateWOs = () => [
-  { id: 'WO-2024-0001', parent: 'ORD-001', part: 'BMW-M4-DOOR-LH', vin: 'WBS3R9C57FK999001', plant: 'Plant A', line: 'Line 1', operation: '010', workCenter: 'WC-DOOR-01', stdTime: 24, actualTime: 26, materialConsumed: 42, producedQty: 85, scrapQty: 2, status: 'In Progress', created: '2026-05-17' },
-  { id: 'WO-2024-0002', parent: 'ORD-001', part: 'BMW-M4-DOOR-RH', vin: 'WBS3R9C57FK999002', plant: 'Plant A', line: 'Line 1', operation: '020', workCenter: 'WC-DOOR-02', stdTime: 24, actualTime: 23, materialConsumed: 40, producedQty: 90, scrapQty: 1, status: 'Completed', created: '2026-05-17' },
-  { id: 'WO-2024-0003', parent: 'ORD-002', part: 'BMW-3-CHASSIS', vin: 'WBS3R9C57FK999010', plant: 'Plant A', line: 'Line 2', operation: '010', workCenter: 'WC-CHASSIS-01', stdTime: 48, actualTime: 45, materialConsumed: 120, producedQty: 60, scrapQty: 0, status: 'Released', created: '2026-05-16' },
-  { id: 'WO-2024-0004', parent: 'ORD-002', part: 'BMW-5-ENGINE-MOUNT', vin: 'WBS3R9C57FK999020', plant: 'Plant B', line: 'Line 3', operation: '010', workCenter: 'WC-ENGINE-01', stdTime: 32, actualTime: 38, materialConsumed: 75, producedQty: 45, scrapQty: 3, status: 'In Progress', created: '2026-05-17' },
-  { id: 'WO-2024-0005', parent: 'ORD-003', part: 'BMW-7-DASH-PANEL', vin: 'WBS3R9C57FK999030', plant: 'Plant B', line: 'Line 4', operation: '030', workCenter: 'WC-INTERIOR-01', stdTime: 18, actualTime: 18, materialConsumed: 30, producedQty: 100, scrapQty: 0, status: 'Closed', created: '2026-05-15' },
-  { id: 'WO-2024-0006', parent: 'ORD-003', part: 'BMW-M3-EXHAUST', vin: 'WBS3R9C57FK999040', plant: 'Plant A', line: 'Line 1', operation: '040', workCenter: 'WC-EXHAUST-01', stdTime: 20, actualTime: null, materialConsumed: 0, producedQty: 0, scrapQty: 0, status: 'Created', created: '2026-05-17' },
-];
+const generateWOs = () => [];
 
 const generateTools = () => [
   { id: 'TL-001', name: 'Torque Wrench 80Nm', type: 'Hand Tool', location: 'Station 1A', calibrationDate: '2026-04-15', nextCalibration: '2026-07-15', cycleCount: 4250, maxCycles: 5000, status: 'Active' },
@@ -168,15 +161,118 @@ export const useAppStore = create((set, get) => ({
   // Andon
   setAndonAlerts: (alerts) => set({ andonAlerts: alerts }),
 
-  raiseAndon: (alert) => set((s) => ({
-    andonAlerts: [{ id: `AND-${Date.now()}`, ...alert, status: 'Open' }, ...s.andonAlerts],
-  })),
+  fetchAndons: async () => {
+    const { supabase, isSupabaseConfigured, getAndonTableName, mapAndonFromDb } = await import('../lib/supabase');
+    if (!isSupabaseConfigured()) return;
+    try {
+      const tableName = await getAndonTableName();
+      const { data, error } = await supabase.from(tableName).select('*');
+      if (error) throw error;
+      if (data) {
+        const formatted = data.map((item) => {
+          const mapped = mapAndonFromDb(item, tableName);
+          const resolvedIds = getResolvedAndonIdsFromStorage();
+          const isResolved = mapped.status === 'resolved' || resolvedIds.includes(mapped.id);
+          if (isResolved) {
+            mapped.status = 'Resolved';
+          } else if (mapped.status === 'acknowledged') {
+            mapped.status = 'Acknowledged';
+          } else {
+            mapped.status = 'Open';
+          }
+          return mapped;
+        });
+        set({ andonAlerts: formatted });
+      }
+    } catch (err) {
+      console.warn('[appStore] fetchAndons failed:', err.message);
+    }
+  },
 
-  resolveAndon: (id) => {
+  raiseAndon: async (alert) => {
+    const { supabase, isSupabaseConfigured, getAndonTableName, mapAndonToDb, mapAndonFromDb, insertDynamic, updateDynamic } = await import('../lib/supabase');
+    
+    // Check if it's already an active database alert (uuid length 36)
+    const isDbAlert = alert.id && alert.id.length === 36 && !alert.id.startsWith('AND-');
+    
+    if (isSupabaseConfigured() && navigator.onLine && !isDbAlert) {
+      try {
+        const tableName = await getAndonTableName();
+        const payload = mapAndonToDb(alert, tableName);
+        const { data, error } = await insertDynamic(tableName, payload);
+        if (error) {
+          console.warn('[appStore] Failed to insert andon alert into Supabase:', error.message);
+          throw error;
+        } else if (data) {
+          const mapped = mapAndonFromDb(data, tableName);
+          mapped.status = 'Open';
+          set((s) => {
+            const exists = s.andonAlerts.some(a => a.id === mapped.id);
+            if (exists) return {};
+            return { andonAlerts: [mapped, ...s.andonAlerts] };
+          });
+        }
+      } catch (err) {
+        console.warn('[appStore] Exception in raiseAndon Supabase insert:', err);
+        // Fallback to offline / local store
+        const newAlert = {
+          id: alert.id || `AND-${Date.now()}`,
+          line: alert.line || 'Line 1',
+          station: alert.station || 'Unknown',
+          type: alert.type || alert.issue_type || 'machine_issue',
+          issue_type: alert.type || alert.issue_type || 'machine_issue',
+          description: alert.description || 'Andon alert raised',
+          severity: alert.severity || 'medium',
+          time: alert.time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          status: 'Open',
+          plant: alert.plant || 'Plant A',
+          shift: alert.shift || 'Shift A',
+        };
+        set((s) => {
+          const exists = s.andonAlerts.some(a => a.id === newAlert.id);
+          if (exists) return {};
+          return { andonAlerts: [newAlert, ...s.andonAlerts] };
+        });
+      }
+    } else {
+      // Offline fallback or already a DB-synced alert
+      const newAlert = {
+        id: alert.id || `AND-${Date.now()}`,
+        line: alert.line || 'Line 1',
+        station: alert.station || 'Unknown',
+        type: alert.type || alert.issue_type || 'machine_issue',
+        issue_type: alert.type || alert.issue_type || 'machine_issue',
+        description: alert.description || 'Andon alert raised',
+        severity: alert.severity || 'medium',
+        time: alert.time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+        status: alert.status === 'Resolved' || alert.status === 'resolved' ? 'Resolved' : 'Open',
+        plant: alert.plant || 'Plant A',
+        shift: alert.shift || 'Shift A',
+      };
+      set((s) => {
+        const exists = s.andonAlerts.some(a => a.id === newAlert.id);
+        if (exists) return {};
+        return { andonAlerts: [newAlert, ...s.andonAlerts] };
+      });
+    }
+  },
+
+  resolveAndon: async (id) => {
     saveResolvedAndonIdToStorage(id);
     set((s) => ({
       andonAlerts: s.andonAlerts.map((a) => a.id === id ? { ...a, status: 'Resolved' } : a),
     }));
+
+    const { supabase, isSupabaseConfigured, getAndonTableName, updateDynamic } = await import('../lib/supabase');
+    if (isSupabaseConfigured()) {
+      try {
+        const tableName = await getAndonTableName();
+        const idCol = tableName === 'andon_alerts' ? 'id' : 'andon_id';
+        await updateDynamic(tableName, { status: 'resolved', resolved_at: new Date().toISOString() }, { [idCol]: id });
+      } catch (err) {
+        console.warn('[appStore] Failed to update andon status in Supabase:', err.message);
+      }
+    }
   },
 
   // Breakdowns

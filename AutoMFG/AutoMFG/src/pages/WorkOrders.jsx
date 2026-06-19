@@ -43,6 +43,9 @@ function normalizeWO(wo) {
 const EDITABLE_ROLES = ['production_planner', 'production_manager'];
 const SEEDED_PARTS = ['BMW-M4-DOOR-LH','BMW-3-CHASSIS','BMW-5-ENGINE-MOUNT','BMW-7-DASH-PANEL','BMW-M3-EXHAUST'];
 
+import { PART_BOM_MAPPING, logActualConsumption, releaseWorkOrderWithMaterials } from '../lib/dbIntegration';
+import { useRealtimeTable } from '../hooks/useRealtimeTable';
+
 function WODetailModal({ wo, onClose, onStatusChange, onUpdated }) {
   const { user } = useAuthStore();
   const canEdit = EDITABLE_ROLES.includes(user?.role);
@@ -56,8 +59,43 @@ function WODetailModal({ wo, onClose, onStatusChange, onUpdated }) {
     part_number: wo.part === '—' ? '' : wo.part,
   });
 
+  const [issuedMaterials, setIssuedMaterials] = useState([]);
+  const [consumptionLogs, setConsumptionLogs] = useState([]);
+  const [logQty, setLogQty] = useState({});
+
   const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(wo.status) + 1];
   const variance = wo.actualTime && wo.stdTime ? ((wo.actualTime - wo.stdTime) / wo.stdTime * 100).toFixed(1) : null;
+
+  const fetchIssuedAndConsumed = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data: issues } = await supabase
+        .from('material_issues')
+        .select('*')
+        .eq('wo_number', wo.id);
+      if (issues) setIssuedMaterials(issues);
+
+      const { data: logs } = await supabase
+        .from('material_consumption_logs')
+        .select('*')
+        .eq('work_order_id', wo.id);
+      if (logs) setConsumptionLogs(logs);
+    } catch (e) {
+      console.warn('Failed to load issues/consumption:', e.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchIssuedAndConsumed();
+  }, [wo.id]);
+
+  // Realtime subscription inside detail modal
+  useRealtimeTable('material_issues', () => {
+    fetchIssuedAndConsumed();
+  });
+  useRealtimeTable('material_consumption_logs', () => {
+    fetchIssuedAndConsumed();
+  });
 
   useEffect(() => {
     if (editMode && isSupabaseConfigured()) {
@@ -75,11 +113,8 @@ function WODetailModal({ wo, onClose, onStatusChange, onUpdated }) {
       if (form.part_number) payload.part_number = form.part_number;
       if (form.line_id && /^[0-9a-f-]{36}$/i.test(form.line_id)) payload.line_id = form.line_id;
 
-      // VIN has a FK constraint → work_orders.vin REFERENCES vin_units(vin)
-      // Must upsert into vin_units first, then attach to work_order.
       if (vinValue) {
         const vinPayload = { vin: vinValue, current_status: 'planned' };
-        // part_number on vin_units is also a FK — only set if a seeded part is selected
         if (form.part_number) vinPayload.part_number = form.part_number;
 
         const { error: vinErr } = await supabase
@@ -106,13 +141,31 @@ function WODetailModal({ wo, onClose, onStatusChange, onUpdated }) {
     }
   };
 
+  const handleLogConsumption = async (partCode) => {
+    const qty = Number(logQty[partCode] || 0);
+    if (qty <= 0) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
+    const res = await logActualConsumption(wo.id, partCode, qty);
+    if (res.success) {
+      toast.success(`Logged ${qty} units consumed for ${partCode}`);
+      setLogQty(prev => ({ ...prev, [partCode]: '' }));
+      fetchIssuedAndConsumed();
+    } else {
+      toast.error(res.error);
+    }
+  };
+
+  const requiredMaterials = PART_BOM_MAPPING[wo.part] || PART_BOM_MAPPING['BMW-M4-DOOR-LH'];
+
   const fieldStyle = { background: 'var(--bg-elevated)', padding: '10px 12px', border: '1px solid var(--border)' };
   const labelStyle = { fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted-text)', marginBottom: 4 };
   const valueStyle = { fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 600, color: 'var(--white)' };
 
   return (
     <div className="modal-overlay">
-      <div className="modal" style={{ maxWidth: 720 }}>
+      <div className="modal" style={{ maxWidth: 780 }}>
         <div className="modal-header">
           <div>
             <span className="modal-title">{wo.id}</span>
@@ -127,7 +180,7 @@ function WODetailModal({ wo, onClose, onStatusChange, onUpdated }) {
           </div>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           {/* Status Flow */}
           <div style={{ marginBottom: 20 }}>
             <div className="status-flow">
@@ -175,31 +228,109 @@ function WODetailModal({ wo, onClose, onStatusChange, onUpdated }) {
             </div>
           ) : (
             /* ── READ-ONLY MODE ── all roles */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
-              {[
-                { label: 'Parent Plan', value: wo.parent },
-                { label: 'VIN', value: wo.vin },
-                { label: 'Plant', value: wo.plant },
-                { label: 'Line', value: wo.line },
-                { label: 'Work Center', value: wo.workCenter },
-                { label: 'Operation #', value: wo.operation },
-                { label: 'Standard Time', value: wo.stdTime ? `${wo.stdTime} min` : '—' },
-                { label: 'Actual Time', value: wo.actualTime ? `${wo.actualTime} min` : '—' },
-                { label: 'Variance', value: variance ? `${variance > 0 ? '+' : ''}${variance}%` : '—' },
-                { label: 'Planned Qty', value: wo.plannedQty },
-                { label: 'Actual Qty', value: wo.actualQty },
-                { label: 'Scrap Qty', value: wo.scrapQty },
-              ].map(({ label, value }) => (
-                <div key={label} style={fieldStyle}>
-                  <div style={labelStyle}>{label}</div>
-                  <div style={{ ...valueStyle, color: label === 'Variance' && variance > 0 ? 'var(--red)' : label === 'Variance' && variance <= 0 ? 'var(--green)' : 'var(--white)' }}>{value ?? '—'}</div>
+            <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+                {[
+                  { label: 'Parent Plan', value: wo.parent },
+                  { label: 'VIN', value: wo.vin },
+                  { label: 'Plant', value: wo.plant },
+                  { label: 'Line', value: wo.line },
+                  { label: 'Work Center', value: wo.workCenter },
+                  { label: 'Operation #', value: wo.operation },
+                  { label: 'Standard Time', value: wo.stdTime ? `${wo.stdTime} min` : '—' },
+                  { label: 'Actual Time', value: wo.actualTime ? `${wo.actualTime} min` : '—' },
+                  { label: 'Variance', value: variance ? `${variance > 0 ? '+' : ''}${variance}%` : '—' },
+                  { label: 'Planned Qty', value: wo.plannedQty },
+                  { label: 'Actual Qty', value: wo.actualQty },
+                  { label: 'Scrap Qty', value: wo.scrapQty },
+                ].map(({ label, value }) => (
+                  <div key={label} style={fieldStyle}>
+                    <div style={labelStyle}>{label}</div>
+                    <div style={{ ...valueStyle, color: label === 'Variance' && variance > 0 ? 'var(--red)' : label === 'Variance' && variance <= 0 ? 'var(--green)' : 'var(--white)' }}>{value ?? '—'}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── WORK ORDER MATERIAL USAGE SECTION ── */}
+              <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 12, color: 'var(--white)', letterSpacing: '0.1em', marginBottom: 12, textTransform: 'uppercase' }}>
+                  📦 Work Order Material Usage & Inventory Status
+                </h3>
+                <div className="table-wrapper">
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Material</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Required Qty</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Issued Qty</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Consumed Qty</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Remaining Issued</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Shortage Status</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Deduction</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'left', color: 'var(--muted-text)' }}>Log Usage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {requiredMaterials.map(m => {
+                        const required = m.qty_per_product * (wo.plannedQty || 1);
+                        const issueRecord = issuedMaterials.find(i => i.part_number === m.part_code);
+                        const issued = issueRecord ? issueRecord.issued_qty : (wo.status === 'created' ? 0 : required);
+                        
+                        const logs = consumptionLogs.filter(l => l.part_code === m.part_code);
+                        const consumed = logs.reduce((sum, current) => sum + (current.quantity || 0), 0);
+                        const remaining = Math.max(0, issued - consumed);
+                        
+                        const isShort = issued < required;
+                        const deductionStatus = wo.status === 'created' ? 'Pending Release' : 'Deducted';
+                        const warehouseStatus = wo.status === 'created' ? 'Not Started' : 'Issue Request Sent';
+
+                        return (
+                          <tr key={m.part_code} style={{ borderBottom: '1px solid var(--border)' }}>
+                            <td style={{ padding: '8px', color: 'var(--white)', fontWeight: 600 }}>{m.material_name} <br/><span style={{ fontSize: 9, color: 'var(--muted-text)' }}>{m.part_code}</span></td>
+                            <td style={{ padding: '8px' }}>{required}</td>
+                            <td style={{ padding: '8px', color: 'var(--green)' }}>{issued}</td>
+                            <td style={{ padding: '8px', color: 'var(--bmw-blue)' }}>{consumed}</td>
+                            <td style={{ padding: '8px' }}>{remaining}</td>
+                            <td style={{ padding: '8px' }}>
+                              <span className={`badge ${isShort ? 'badge-red' : 'badge-green'}`}>
+                                {isShort ? 'SHORTAGE ALERTED' : 'STOCK AVAILABLE'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <div style={{ fontSize: 10 }}>{deductionStatus}</div>
+                              <div style={{ fontSize: 8, color: 'var(--muted-text)' }}>{warehouseStatus}</div>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <input
+                                  className="form-input form-input-sm"
+                                  type="number"
+                                  placeholder="Qty"
+                                  style={{ width: 50, padding: 4, height: 26, fontSize: 11 }}
+                                  value={logQty[m.part_code] || ''}
+                                  onChange={e => setLogQty(prev => ({ ...prev, [m.part_code]: e.target.value }))}
+                                />
+                                <button
+                                  className="btn btn-sm btn-primary"
+                                  style={{ padding: '2px 8px', height: 26, fontSize: 10 }}
+                                  onClick={() => handleLogConsumption(m.part_code)}
+                                >
+                                  Log
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-              ))}
-            </div>
+              </div>
+            </>
           )}
 
           {wo.actualTime && !editMode && (
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 16, marginTop: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                 <span style={{ fontFamily: 'var(--font-heading)', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted-text)' }}>Time vs Standard</span>
                 <span style={{ fontFamily: 'var(--font-heading)', fontSize: 12, color: wo.actualTime > wo.stdTime ? 'var(--red)' : 'var(--green)' }}>{wo.actualTime} / {wo.stdTime} min</span>
@@ -435,12 +566,28 @@ export default function WorkOrders() {
   const handleStatusChange = async (id, status) => {
     try {
       if (isSupabaseConfigured()) {
-        const { error } = await supabase.from('work_orders').update({
-          status,
-          ...(status === 'released' ? { released_at: new Date().toISOString() } : {}),
-          ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {}),
-        }).eq('wo_number', id);
-        if (error) throw error;
+        if (status === 'released') {
+          const res = await releaseWorkOrderWithMaterials(id, false);
+          if (!res.success) {
+            if (res.shortage) {
+              const confirmForce = window.confirm(`Stock shortage detected! Replenishment requests and purchasing requisitions have been generated.\n\nDo you want to FORCE RELEASE this work order anyway?`);
+              if (confirmForce) {
+                const forceRes = await releaseWorkOrderWithMaterials(id, true);
+                if (!forceRes.success) throw new Error(forceRes.error);
+              } else {
+                return;
+              }
+            } else {
+              throw new Error(res.error);
+            }
+          }
+        } else {
+          const { error } = await supabase.from('work_orders').update({
+            status,
+            ...(status === 'completed' ? { completed_at: new Date().toISOString() } : {}),
+          }).eq('wo_number', id);
+          if (error) throw error;
+        }
         writeAuditLog(user?.id, 'work_orders', 'update', { wo_number: id, status });
       }
       // Only update local state after Supabase confirms
@@ -448,8 +595,7 @@ export default function WorkOrders() {
       updateWOStatus(id, status);
       toast.success(`WO ${id} → ${STATUS_LABEL[status] || status}`);
     } catch (err) {
-      toast.error('Failed to save. Please try again.');
-      // Do NOT update local state on error
+      toast.error('Failed to save status: ' + err.message);
     }
   };
 

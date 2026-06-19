@@ -141,18 +141,22 @@ export default function OEEDashboard() {
       <div className="page-header">
         <div className="page-title-block"><h1 className="page-title">OEE Dashboard</h1><div className="page-subtitle">Overall Equipment Effectiveness & Production KPIs</div></div>
         <div className="page-actions">
-          <select className="form-select" style={{ width: 120 }} value={selectedLine} onChange={(e) => setSelectedLine(e.target.value)}>
-            <option value="all">All Lines</option>
-            <option value="line-1">Line 1</option>
-            <option value="line-2">Line 2</option>
-            <option value="line-3">Line 3</option>
-          </select>
-          <select className="form-select" style={{ width: 120 }} value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)}>
-            <option value="all">All Shifts</option>
-            <option value="A">Shift A</option>
-            <option value="B">Shift B</option>
-            <option value="C">Shift C</option>
-          </select>
+          {user?.role !== 'plant_manager' && (
+            <>
+              <select className="form-select" style={{ width: 120 }} value={selectedLine} onChange={(e) => setSelectedLine(e.target.value)}>
+                <option value="all">All Lines</option>
+                <option value="line-1">Line 1</option>
+                <option value="line-2">Line 2</option>
+                <option value="line-3">Line 3</option>
+              </select>
+              <select className="form-select" style={{ width: 120 }} value={selectedShift} onChange={(e) => setSelectedShift(e.target.value)}>
+                <option value="all">All Shifts</option>
+                <option value="A">Shift A</option>
+                <option value="B">Shift B</option>
+                <option value="C">Shift C</option>
+              </select>
+            </>
+          )}
           <button className="icon-btn" onClick={fetchOEE} title="Refresh"><RefreshCw size={14} /></button>
         </div>
       </div>

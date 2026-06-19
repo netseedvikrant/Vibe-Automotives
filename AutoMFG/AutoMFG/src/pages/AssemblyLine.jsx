@@ -94,6 +94,11 @@ function AndonModal({ onClose, onRaise }) {
         raised_by: safeUUID(user?.id),
         status: 'open',
         raised_at: new Date().toISOString(),
+        line: 'Line 1',
+        station: data.station || 'Unknown',
+        description: data.description || `${data.issue_type.replace('_', ' ')} reported by operator`,
+        plant: user?.plant || 'Plant A',
+        shift: user?.shift || 'Shift A',
       };
 
       if (!navigator.onLine) {
@@ -108,6 +113,8 @@ function AndonModal({ onClose, onRaise }) {
           severity: data.severity,
           time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
           status: 'Open',
+          plant: user?.plant || 'Plant A',
+          shift: user?.shift || 'Shift A',
         };
         onRaise(newAlert);
         onClose();
@@ -150,6 +157,8 @@ function AndonModal({ onClose, onRaise }) {
           severity: data.severity,
           time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
           status: 'Open',
+          plant: user?.plant || 'Plant A',
+          shift: user?.shift || 'Shift A',
         };
         onRaise(newAlert);
       } else {
@@ -163,6 +172,8 @@ function AndonModal({ onClose, onRaise }) {
           severity: data.severity,
           time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
           status: 'Open',
+          plant: user?.plant || 'Plant A',
+          shift: user?.shift || 'Shift A',
         };
         onRaise(newAlert);
       }
@@ -224,32 +235,121 @@ function AndonModal({ onClose, onRaise }) {
   );
 }
 
+function normalizeWO(wo) {
+  return {
+    id: wo.wo_number || wo.id,
+    wo_number: wo.wo_number || wo.id,
+    plan_id: wo.plan_id || null,
+    parent: wo.production_plans?.plan_code || wo.production_plans?.plan_id?.slice(0,8) || wo.plan_id?.slice(0,8) || '—',
+    part: wo.part_number || wo.part || '—',
+    vin: wo.vin || '—',
+    plant: wo.plants?.name || (!wo.plant_id || wo.plant_id?.includes('-') ? 'Plant A' : wo.plant_id) || '—',
+    line: wo.production_lines?.line_name || (!wo.line_id || wo.line_id?.includes('-') ? '—' : wo.line_id) || '—',
+    line_id: wo.line_id || null,
+    workCenter: wo.workCenter || '—',
+    operation: wo.operation || '—',
+    stdTime: wo.stdTime || 24,
+    actualTime: wo.actualTime || null,
+    plannedQty: wo.planned_qty ?? wo.producedQty ?? 0,
+    actualQty: wo.actual_qty ?? wo.producedQty ?? 0,
+    scrapQty: wo.scrap_qty ?? wo.scrapQty ?? 0,
+    status: (wo.status || 'created').toLowerCase().replace(' ', '_'),
+    created: wo.created_at?.slice(0, 10) || wo.created || '—',
+  };
+}
+
 export default function AssemblyLine() {
   const { user } = useAuthStore();
-  const { andonAlerts, raiseAndon, resolveAndon, workOrders, addToast } = useAppStore();
+  const { andonAlerts, raiseAndon, resolveAndon, workOrders: _, addToast, fetchAndons } = useAppStore();
   const [operationRunning, setOperationRunning] = useState(false);
   const [showAndon, setShowAndon] = useState(false);
   const [activeTab, setActiveTab] = useState('station'); // 'station' | 'andon'
   const [qtyProduced, setQtyProduced] = useState('');
   const [operationLog, setOperationLog] = useState([]);
-  const [realtimeAlerts, setRealtimeAlerts] = useState([]);
   const [currentOperationId, setCurrentOperationId] = useState(null); // ✅ Track DB record ID
   const operationStartTime = useRef(null); // ✅ Track start time for takt
 
-  const activeAlerts = [...andonAlerts, ...realtimeAlerts].filter((a) => a.status === 'Open' || a.status === 'open');
-  const currentWO = workOrders.find((w) => w.status === 'In Progress' || w.status === 'in_progress');
+  const [currentWO, setCurrentWO] = useState(null);
+  const [loadingWO, setLoadingWO] = useState(true);
 
-  // Supabase realtime subscription for andon events
+  const fetchCurrentWO = async () => {
+    if (!isSupabaseConfigured()) {
+      setLoadingWO(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('work_orders')
+        .select(`
+          *,
+          production_plans ( plan_id, plan_code, part_number, line_id, start_date, end_date ),
+          production_lines ( line_name ),
+          plants ( name )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const allOrders = data || [];
+      const normalizeStatus = (status) =>
+        String(status || "")
+          .toLowerCase()
+          .replaceAll(" ", "_")
+          .replaceAll("-", "_");
+
+      const inProgressOrders = allOrders.filter(
+        (wo) => normalizeStatus(wo.status) === "in_progress"
+      );
+
+      const selectedPlant = user?.plant || "Plant A";
+      const currentLine = "Line 1";
+
+      const matchingWorkOrder = inProgressOrders.find(wo => {
+        const woPlant = wo.plants?.name || wo.plant_id || 'Plant A';
+        const woLine = wo.production_lines?.line_name || wo.line_id || 'Line 1';
+        return woPlant === selectedPlant && woLine === currentLine;
+      }) || inProgressOrders[0] || null;
+
+      if (matchingWorkOrder) {
+        setCurrentWO(normalizeWO(matchingWorkOrder));
+      } else {
+        setCurrentWO(null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch current work order:", err);
+    } finally {
+      setLoadingWO(false);
+    }
+  };
+
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    const channel = supabase.channel('andon-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'andon_events' }, (payload) => {
-        setRealtimeAlerts((prev) => [...prev, { ...payload.new, id: payload.new.andon_id, status: 'Open' }]);
-        toast.error('⚡ NEW ANDON EVENT — Check the Andon Board', { duration: 8000 });
-      })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+    fetchAndons();
+    fetchCurrentWO();
+
+    let channel;
+    if (isSupabaseConfigured()) {
+      channel = supabase
+        .channel("work_orders_realtime_assembly")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "work_orders"
+          },
+          () => {
+            fetchCurrentWO();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
+
+  const activeAlerts = andonAlerts.filter((a) => a.status === 'Open' || a.status === 'open' || a.status === 'active' || a.status === 'Active');
 
   const handleStartOperation = async () => {
     operationStartTime.current = Date.now();
@@ -358,14 +458,12 @@ export default function AssemblyLine() {
 
   const handleResolveAndon = async (id) => {
     resolveAndon(id);
-    setRealtimeAlerts((prev) => prev.map((a) => a.id === id ? { ...a, status: 'Resolved' } : a));
     toast.success('Andon resolved');
 
     if (isSupabaseConfigured()) {
       try {
         // Only update if it's a real UUID andon_id
         if (safeUUID(id)) {
-          await supabase.from('andon_events').update({ status: 'resolved', resolved_at: new Date().toISOString() }).eq('andon_id', id);
           await supabase.from('issue_resolutions').insert({
             andon_id: id,
             resolver_id: safeUUID(user?.id), // ✅ safeUUID guard
@@ -447,7 +545,11 @@ export default function AssemblyLine() {
           {/* Right: Current WO + Work Instructions */}
           <div className="card">
             <div className="card-header"><span className="card-title">Current Work Order</span></div>
-            {currentWO ? (
+            {loadingWO ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted-text)', fontSize: 12 }}>
+                Loading current work order...
+              </div>
+            ) : currentWO ? (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                   {[
@@ -513,11 +615,11 @@ export default function AssemblyLine() {
           {/* Resolved alerts */}
           <div className="card">
             <div className="card-header"><span className="card-title">Resolved Today</span></div>
-            {[...andonAlerts, ...realtimeAlerts].filter((a) => a.status === 'Resolved' || a.status === 'resolved').length === 0 ? (
+            {andonAlerts.filter((a) => a.status === 'Resolved' || a.status === 'resolved').length === 0 ? (
               <div style={{ padding: '16px', fontFamily: 'var(--font-heading)', fontSize: 11, color: 'var(--muted-text)', textAlign: 'center', letterSpacing: '0.1em' }}>No resolved alerts today</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {[...andonAlerts, ...realtimeAlerts].filter((a) => a.status === 'Resolved' || a.status === 'resolved').map((alert) => (
+                {andonAlerts.filter((a) => a.status === 'Resolved' || a.status === 'resolved').map((alert) => (
                   <div key={alert.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                     <CheckCircle2 size={14} color="var(--green)" />
                     <div style={{ flex: 1, fontFamily: 'var(--font-heading)', fontSize: 12, color: 'var(--text-secondary)' }}>{alert.line} / {alert.station}: {alert.description}</div>
