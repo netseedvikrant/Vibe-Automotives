@@ -108,13 +108,28 @@ VITE_SUPABASE_URL="https://your-project-ref.supabase.co"
 VITE_SUPABASE_ANON_KEY="your-anon-public-key"
 ```
 
-### 3. Launching the Landing Portal
-The landing portal uses vanilla static files and can be hosted using any local server (such as Live Server or HTTP-Server):
-```bash
-# Using npx http-server
-npx http-server ./ -p 3000
-```
-Open `http://localhost:3000` in your web browser.
+### 3. Launching the Portals (start_servers.bat)
+The project includes a launcher script (`start_servers.bat`) on Windows to spin up the local development servers:
+* **Option 1**: Starts the original consumer landing page on port `3001` (http://localhost:3001/).
+* **Option 2**: Starts the dedicated, direct corporate staff login gateway on port `3002` (http://localhost:3002/).
+* **Option 3**: Starts both servers simultaneously.
+
+To start the launcher:
+1. Double-click `start_servers.bat` or run it from your command line:
+   ```cmd
+   start_servers.bat
+   ```
+2. Select your desired hosting mode (1, 2, or 3) from the interactive menu.
+
+Alternatively, you can run the servers manually using Python:
+* **Original Landing Page (Port 3001)**:
+  ```bash
+  python3 -m http.server 3001
+  ```
+* **Direct Staff Portal (Port 3002)**:
+  ```bash
+  python3 server_3002.py
+  ```
 
 ### 4. Running AutoDev (React App)
 ```bash
@@ -128,6 +143,14 @@ npm run dev
 cd AutoMFG/AutoMFG
 npm install
 npm run dev
+```
+
+### 6. Compiling AutoSCM (React App)
+The AutoSCM workspace uses a compiled React environment. After making modifications to `app.jsx`, compile the browser bundle:
+```bash
+cd AutoSCM
+npm install
+npm run build
 ```
 
 ---
