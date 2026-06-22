@@ -247,16 +247,7 @@ const CEODashboard = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex-center" style={{ height: '80vh', flexDirection: 'column', gap: '15px', color: 'var(--gold-primary)' }}>
-        <RefreshCcw className="animate-spin" size={40} />
-        <h3 style={{ fontFamily: 'monospace', letterSpacing: '2px' }}>LOADING EXECUTIVE COMMAND PORTAL...</h3>
-      </div>
-    );
-  }
-
-  const enrichedLogs = getEnrichedLogs();
+  const enrichedLogs = loading ? [] : getEnrichedLogs();
 
   return (
     <div className="ceo-dashboard-container">
@@ -298,7 +289,11 @@ const CEODashboard = () => {
             <Briefcase size={22} />
           </div>
           <div className="ceo-metric-info">
-            <span className="ceo-metric-val">{stats.totalPrograms}</span>
+            {loading ? (
+              <div className="skeleton-text" style={{ width: '40px', height: '24px', margin: '4px 0' }}></div>
+            ) : (
+              <span className="ceo-metric-val">{stats.totalPrograms}</span>
+            )}
             <span className="ceo-metric-label">Active Programs</span>
           </div>
         </div>
@@ -308,7 +303,11 @@ const CEODashboard = () => {
             <Users size={22} />
           </div>
           <div className="ceo-metric-info">
-            <span className="ceo-metric-val">{stats.activeStaff}</span>
+            {loading ? (
+              <div className="skeleton-text" style={{ width: '40px', height: '24px', margin: '4px 0' }}></div>
+            ) : (
+              <span className="ceo-metric-val">{stats.activeStaff}</span>
+            )}
             <span className="ceo-metric-label">System Employees</span>
           </div>
         </div>
@@ -318,7 +317,11 @@ const CEODashboard = () => {
             <Activity size={22} />
           </div>
           <div className="ceo-metric-info">
-            <span className="ceo-metric-val">{stats.totalTests}</span>
+            {loading ? (
+              <div className="skeleton-text" style={{ width: '40px', height: '24px', margin: '4px 0' }}></div>
+            ) : (
+              <span className="ceo-metric-val">{stats.totalTests}</span>
+            )}
             <span className="ceo-metric-label">Validation Runs</span>
           </div>
         </div>
@@ -328,7 +331,11 @@ const CEODashboard = () => {
             <FileText size={22} />
           </div>
           <div className="ceo-metric-info">
-            <span className="ceo-metric-val">{stats.pendingECOs}</span>
+            {loading ? (
+              <div className="skeleton-text" style={{ width: '40px', height: '24px', margin: '4px 0' }}></div>
+            ) : (
+              <span className="ceo-metric-val">{stats.pendingECOs}</span>
+            )}
             <span className="ceo-metric-label">Pending ECOs</span>
           </div>
         </div>
@@ -353,7 +360,16 @@ const CEODashboard = () => {
                   <span style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: 'bold' }}>SELECT TO INPSECT TIMELINE</span>
                 </div>
                 <div className="ceo-programs-list">
-                  {programs.length === 0 ? (
+                  {loading ? (
+                    Array(3).fill(0).map((_, i) => (
+                      <div key={`skeleton-ceo-prog-${i}`} className="ceo-program-row" style={{ opacity: 0.5 }}>
+                        <div className="ceo-prog-ident">
+                          <div className="skeleton-text" style={{ width: '150px', height: '14px', marginBottom: '8px' }}></div>
+                          <div className="skeleton-text short" style={{ width: '220px' }}></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : programs.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-exec-muted)' }}>
                       No vehicle development programs currently active.
                     </div>
@@ -431,7 +447,17 @@ const CEODashboard = () => {
                   </button>
                 </div>
                 <div className="ceo-logs-stream">
-                  {enrichedLogs.length === 0 ? (
+                  {loading ? (
+                    Array(3).fill(0).map((_, i) => (
+                      <div key={`skeleton-ceo-log-${i}`} className="ceo-log-row" style={{ opacity: 0.5 }}>
+                        <div className="ceo-log-meta">
+                          <div className="skeleton-text" style={{ width: '120px', height: '12px' }}></div>
+                          <div className="skeleton-text" style={{ width: '60px', height: '12px' }}></div>
+                        </div>
+                        <div className="skeleton-text" style={{ width: '80%', height: '12px', marginTop: '6px' }}></div>
+                      </div>
+                    ))
+                  ) : enrichedLogs.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-exec-muted)' }}>
                       Audit log stream is currently empty.
                     </div>
@@ -463,66 +489,84 @@ const CEODashboard = () => {
             transition={{ duration: 0.25 }}
           >
             <div className="ceo-staff-grid">
-              {users.map(user => {
-                // Determine initials
-                const initials = user.full_name ? user.full_name.split(' ').map(n => n[0]).join('') : 'U';
-                
-                // Calculate performance score based on name length/role to seed simulated dashboard metrics
-                const scoreSeed = ((user.full_name?.length || 0) * 7) % 15;
-                const score = 85 + scoreSeed;
-
-                return (
-                  <div key={user.id} className="ceo-staff-card">
+              {loading ? (
+                Array(3).fill(0).map((_, i) => (
+                  <div key={`skeleton-staff-${i}`} className="ceo-staff-card" style={{ opacity: 0.5 }}>
                     <div className="ceo-staff-header">
-                      <div className="ceo-staff-avatar">{initials}</div>
+                      <div className="skeleton-text" style={{ width: '40px', height: '40px', borderRadius: '50%' }}></div>
                       <div className="ceo-staff-meta">
-                        <h4>{user.full_name}</h4>
-                        <p>{user.role}</p>
+                        <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: '6px' }}></div>
+                        <div className="skeleton-text short" style={{ width: '60px' }}></div>
                       </div>
                     </div>
-
                     <div className="ceo-staff-details">
-                      <div className="ceo-staff-detail-item">
-                        <span className="label">Department:</span>
-                        <span className="val">{user.email?.includes('procurement') || user.email?.includes('supplier') ? 'SCM' : user.role?.includes('MFG') || user.role?.includes('Manufacturing') ? 'MFG' : 'R&D'}</span>
-                      </div>
-                      <div className="ceo-staff-detail-item">
-                        <span className="label">Plant Location:</span>
-                        <span className="val">{user.plant_location || 'Detroit Assembly'}</span>
-                      </div>
-                      <div className="ceo-staff-detail-item">
-                        <span className="label">Identity Email:</span>
-                        <span className="val" style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{user.email}</span>
-                      </div>
-                      <div className="ceo-staff-detail-item">
-                        <span className="label">Monthly Audit Score:</span>
-                        <span className="val" style={{ color: score >= 93 ? '#10b981' : score >= 88 ? 'var(--gold-primary)' : '#f59e0b', fontWeight: 'bold' }}>
-                          {score}%
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="ceo-staff-actions">
-                      <button 
-                        className="ceo-staff-btn message"
-                        onClick={() => {
-                          setMessageModalUser(user);
-                          setMessageText('');
-                          setBroadcastMode(false);
-                        }}
-                      >
-                        <Send size={12} /> Message
-                      </button>
-                      <button 
-                        className="ceo-staff-btn trail"
-                        onClick={() => handleViewUserTrail(user)}
-                      >
-                        <Activity size={12} /> View Trail
-                      </button>
+                      <div className="skeleton-text" style={{ width: '85%', height: '12px', margin: '6px 0' }}></div>
+                      <div className="skeleton-text" style={{ width: '70%', height: '12px', margin: '6px 0' }}></div>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              ) : (
+                users.map(user => {
+                  // Determine initials
+                  const initials = user.full_name ? user.full_name.split(' ').map(n => n[0]).join('') : 'U';
+                  
+                  // Calculate performance score based on name length/role to seed simulated dashboard metrics
+                  const scoreSeed = ((user.full_name?.length || 0) * 7) % 15;
+                  const score = 85 + scoreSeed;
+
+                  return (
+                    <div key={user.id} className="ceo-staff-card">
+                      <div className="ceo-staff-header">
+                        <div className="ceo-staff-avatar">{initials}</div>
+                        <div className="ceo-staff-meta">
+                          <h4>{user.full_name}</h4>
+                          <p>{user.role}</p>
+                        </div>
+                      </div>
+
+                      <div className="ceo-staff-details">
+                        <div className="ceo-staff-detail-item">
+                          <span className="label">Department:</span>
+                          <span className="val">{user.email?.includes('procurement') || user.email?.includes('supplier') ? 'SCM' : user.role?.includes('MFG') || user.role?.includes('Manufacturing') ? 'MFG' : 'R&D'}</span>
+                        </div>
+                        <div className="ceo-staff-detail-item">
+                          <span className="label">Plant Location:</span>
+                          <span className="val">{user.plant_location || 'Detroit Assembly'}</span>
+                        </div>
+                        <div className="ceo-staff-detail-item">
+                          <span className="label">Identity Email:</span>
+                          <span className="val" style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{user.email}</span>
+                        </div>
+                        <div className="ceo-staff-detail-item">
+                          <span className="label">Monthly Audit Score:</span>
+                          <span className="val" style={{ color: score >= 93 ? '#10b981' : score >= 88 ? 'var(--gold-primary)' : '#f59e0b', fontWeight: 'bold' }}>
+                            {score}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="ceo-staff-actions">
+                        <button 
+                          className="ceo-staff-btn message"
+                          onClick={() => {
+                            setMessageModalUser(user);
+                            setMessageText('');
+                            setBroadcastMode(false);
+                          }}
+                        >
+                          <Send size={12} /> Message
+                        </button>
+                        <button 
+                          className="ceo-staff-btn trail"
+                          onClick={() => handleViewUserTrail(user)}
+                        >
+                          <Activity size={12} /> View Trail
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </motion.div>
         )}

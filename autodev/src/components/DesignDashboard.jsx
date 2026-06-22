@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { uploadToCloudinary } from '../lib/cloudinary';
 import './DesignDashboard.css';
 
 const DesignDashboard = () => {
@@ -97,29 +98,9 @@ const DesignDashboard = () => {
     setIsUploading(true);
     
     try {
-      const fileExt = file.name.split('.').pop();
-      const uniqueFileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${selectedTask.program_id}/${uniqueFileName}`;
-
-      // Upload file bytes to Supabase Storage (cad_models bucket)
-      const { error: uploadError } = await supabase.storage
-        .from('cad_models')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: file.type || 'application/octet-stream'
-        });
-
-      if (uploadError) {
-        if (uploadError.message?.includes('Bucket not found')) {
-          throw new Error('CAD storage bucket "cad_models" not found. Run phase1_schema_upgrade.sql in Supabase.');
-        }
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('cad_models')
-        .getPublicUrl(filePath);
+      // Upload file directly to Cloudinary
+      const uploadResult = await uploadToCloudinary(file);
+      const publicUrl = uploadResult.url;
 
       // Version calculation: proposal of v1.x based on highest current version
       let newVersion = 'v1.0';
@@ -140,7 +121,7 @@ const DesignDashboard = () => {
         file_name: file.name,
         file_url: publicUrl,
         version: newVersion,
-        description: `Storage: ${filePath} | Task: ${selectedTask.task_name} | Size: ${(file.size / 1024).toFixed(1)} KB`,
+        description: `Storage: ${uploadResult.publicId} | Task: ${selectedTask.task_name} | Size: ${(file.size / 1024).toFixed(1)} KB`,
         uploaded_by: profile?.id,
         status: 'In Progress'
       });
@@ -152,7 +133,7 @@ const DesignDashboard = () => {
         await updateTaskStatus(selectedTask.id, 'In Progress');
       }
       event.target.value = '';
-      alert(`CAD file uploaded to storage as ${newVersion}.\n\nFile: ${file.name}\nURL: ${publicUrl}`);
+      alert(`CAD file uploaded to Cloudinary as ${newVersion}.\n\nFile: ${file.name}\nURL: ${publicUrl}`);
     } catch (err) {
       console.error('Error uploading file:', err);
       alert(`Failed to upload revision: ${err.message || 'Unknown error'}`);
@@ -270,12 +251,19 @@ const DesignDashboard = () => {
       const enriched = await Promise.all((data || []).map(async (task) => {
         const { data: prog } = await supabase
           .from('programs')
-          .select('program_name, program_code')
+          .select('program_name, program_code, created_at')
           .eq('id', task.program_id)
           .maybeSingle();
         
         return { ...task, programs: prog };
       }));
+
+      // Sort tasks by program creation date descending
+      enriched.sort((a, b) => {
+        const dateA = a.programs?.created_at ? new Date(a.programs.created_at) : new Date(0);
+        const dateB = b.programs?.created_at ? new Date(b.programs.created_at) : new Date(0);
+        return dateB - dateA;
+      });
 
       setTasks(enriched);
       if (enriched.length > 0) setSelectedTask(enriched[0]);
@@ -313,8 +301,6 @@ const DesignDashboard = () => {
     }
   };
 
-  if (loading) return <div className="loader">Initializing CAD Workspaces...</div>;
-
   return (
     <div className="design-dashboard-container">
       <header className="design-header">
@@ -322,10 +308,6 @@ const DesignDashboard = () => {
           <div className="status-badge-studio">DESIGN PHASE ACTIVE</div>
           <h1>Engineering Design Studio</h1>
           <p className="technical-meta">SUBSYSTEM DEVELOPMENT // CAD VERSIONING // DDR WORKFLOW</p>
-        </div>
-        <div className="header-actions">
-          <button className="secondary-btn"><History size={18} /> Revision History</button>
-          <button className="primary-btn"><Plus size={18} /> New Design Note</button>
         </div>
       </header>
 
@@ -336,21 +318,34 @@ const DesignDashboard = () => {
             <h3><Activity size={18} /> Assigned Tasks</h3>
           </div>
           <div className="task-list">
-            {tasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`task-card glass ${selectedTask?.id === task.id ? 'active' : ''}`}
-                onClick={() => setSelectedTask(task)}
-              >
-                <div className="task-top">
-                  <span className={`priority-tag ${task.priority.toLowerCase()}`}>{task.priority}</span>
-                  <span className="due-tag"><Clock size={12} /> {new Date(task.due_date).toLocaleDateString()}</span>
+            {loading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={`skeleton-task-${i}`} className="task-card glass" style={{ opacity: 0.5 }}>
+                  <div className="task-top">
+                    <div className="skeleton-text" style={{ width: '40px', height: '14px' }}></div>
+                    <div className="skeleton-text" style={{ width: '60px', height: '14px' }}></div>
+                  </div>
+                  <div className="skeleton-text" style={{ width: '80%', height: '14px', margin: '8px 0' }}></div>
+                  <div className="skeleton-text short" style={{ width: '50%' }}></div>
                 </div>
-                <h4>{task.task_name}</h4>
-                <p>{task.programs?.program_name}</p>
-                <div className={`status-pill ${task.status.replace(' ', '-').toLowerCase()}`}>{task.status}</div>
-              </div>
-            ))}
+              ))
+            ) : (
+              tasks.map(task => (
+                <div 
+                  key={task.id} 
+                  className={`task-card glass ${selectedTask?.id === task.id ? 'active' : ''}`}
+                  onClick={() => setSelectedTask(task)}
+                >
+                  <div className="task-top">
+                    <span className={`priority-tag ${task.priority.toLowerCase()}`}>{task.priority}</span>
+                    <span className="due-tag"><Clock size={12} /> {new Date(task.due_date).toLocaleDateString()}</span>
+                  </div>
+                  <h4>{task.task_name}</h4>
+                  <p>{task.programs?.program_name}</p>
+                  <div className={`status-pill ${task.status.replace(' ', '-').toLowerCase()}`}>{task.status}</div>
+                </div>
+              ))
+            )}
           </div>
         </aside>
 
@@ -498,11 +493,6 @@ const DesignDashboard = () => {
 
                 {activeTab === 'ddr-review' && (
                   <div className="tab-section">
-                    <div className="ddr-status-tracker">
-                      {['Initial Review', 'Cross Functional', 'Manufacturing', 'Quality'].map(step => (
-                        <div key={step} className={`step ${getDdrStepState(step)}`}>{step}</div>
-                      ))}
-                    </div>
                     {currentDDR?.status === 'Corrections Required' && (
                       <div style={{ marginBottom: '16px', padding: '12px 16px', background: 'rgba(255, 77, 77, 0.08)', border: '1px solid rgba(255, 77, 77, 0.3)', borderRadius: '8px' }}>
                         <strong style={{ color: '#ff6b6b' }}>DDR Rejected — Chief Engineer Feedback:</strong>
@@ -551,10 +541,17 @@ const DesignDashboard = () => {
               </div>
             </div>
           ) : (
-            <div className="empty-workspace glass flex-center">
-              <Cpu size={64} className="muted-icon" />
-              <h2>Select a Design Task to Open Studio</h2>
-            </div>
+            loading ? (
+              <div className="empty-workspace glass flex-center">
+                <div className="skeleton-text" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '16px' }}></div>
+                <div className="skeleton-text" style={{ width: '250px', height: '20px' }}></div>
+              </div>
+            ) : (
+              <div className="empty-workspace glass flex-center">
+                <Cpu size={64} className="muted-icon" />
+                <h2>Select a Design Task to Open Studio</h2>
+              </div>
+            )
           )}
         </main>
       </div>

@@ -9,15 +9,15 @@ import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 const roleBasedMenus = {
-  'Program Manager': ['Dashboard', 'Programs', 'APQP Gates', 'Timeline', 'Teams', 'Reports', 'Documents', 'Notifications', 'Settings', 'DDR Reviews'],
-  'Lead Engineer': ['Dashboard', 'Feasibility', 'TRL Analysis', 'Risk Matrix', 'Reports', 'Notifications', 'DDR Reviews'],
-  'Chief Engineer': ['Dashboard', 'Approvals', 'Programs', 'Portfolio', 'ECOs', 'Notifications'],
-  'Design Engineer': ['Dashboard', 'CAD Models', 'eBOM', 'ECOs', 'DDR Reviews', 'Notifications'],
-  'Validation Engineer': ['Dashboard', 'Test Schedule', 'DVP&R', 'Failures', 'Notifications'],
-  'Quality Engineer': ['Dashboard', 'APQP Tracker', 'PPAP Queue', 'Audits', 'DDR Reviews', 'ECOs', 'Notifications'],
-  'Manufacturing Engineer': ['Dashboard', 'DDR Reviews', 'MBOM Review', 'ECOs', 'Process Plans', 'Notifications'],
-  'Procurement Engineer': ['Dashboard', 'MBOM Review', 'Supplier Sourcing', 'Notifications'],
-  'Supplier Engineer': ['Dashboard', 'My PPAP', 'Specs', 'Notifications'],
+  'Program Manager': ['Dashboard', 'Timeline', 'Reports', 'DDR Reviews'],
+  'Lead Engineer': ['Dashboard', 'DDR Reviews'],
+  'Chief Engineer': ['Dashboard', 'ECOs'],
+  'Design Engineer': ['Dashboard', 'eBOM', 'ECOs', 'DDR Reviews'],
+  'Validation Engineer': ['Dashboard', 'Test Schedule', 'DVP&R', 'Failures'],
+  'Quality Engineer': ['Dashboard', 'APQP Tracker', 'PPAP Queue', 'Audits', 'DDR Reviews', 'ECOs'],
+  'Manufacturing Engineer': ['Dashboard', 'DDR Reviews', 'ECOs', 'Process Plans'],
+  'Procurement Engineer': ['Dashboard', 'MBOM Review', 'Supplier Sourcing'],
+  'Supplier Engineer': ['Dashboard', 'My PPAP', 'Notifications'],
   'Admin': ['Dashboard', 'Users', 'System Logs', 'Workflow Config', 'Settings'],
   'CEO': ['Dashboard', 'Notifications']
 };
@@ -37,9 +37,6 @@ const menuItems = [
   { id: 'Notifications', icon: Bell, label: 'Notifications' },
   { id: 'Settings', icon: Settings, label: 'Settings' },
   // Additional role specific items
-  { id: 'Feasibility', icon: Workflow, label: 'Feasibility' },
-  { id: 'TRL Analysis', icon: BarChart3, label: 'TRL Analysis' },
-  { id: 'Risk Matrix', icon: ShieldAlert, label: 'Risk Matrix' },
   { id: 'Approvals', icon: FileCheck, label: 'Approvals' },
   { id: 'Portfolio', icon: LayoutDashboard, label: 'Portfolio' },
   { id: 'CAD Models', icon: HardDrive, label: 'CAD Models' },
@@ -161,7 +158,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setCollapsed }) => {
               overflow: 'hidden',
               display: 'block',
               textAlign: isCollapsed ? 'center' : 'left',
-              color: '#ffffff',
+              color: '#000000',
               fontWeight: '600'
             }}>
               {profile?.full_name || 'System User'}
@@ -173,7 +170,7 @@ const Sidebar = ({ activeTab, setActiveTab, isCollapsed, setCollapsed }) => {
               overflow: 'hidden',
               display: 'block',
               textAlign: isCollapsed ? 'center' : 'left',
-              color: '#94a3b8',
+              color: '#000000',
               fontWeight: '500'
             }}>
               {profile?.role || 'Awaiting Role'}

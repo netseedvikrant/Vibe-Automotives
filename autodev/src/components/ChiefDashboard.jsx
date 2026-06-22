@@ -9,6 +9,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import './ChiefDashboard.css';
+import CadFilesViewer from './CadFilesViewer';
 
 const ChiefDashboard = () => {
   const { profile } = useAuth();
@@ -238,7 +239,8 @@ const ChiefDashboard = () => {
       // 1. Fetch all programs
       const { data: progData, error: progErr } = await supabase
         .from('programs')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       if (progErr) throw progErr;
 
       // 2. Fetch all gates
@@ -431,9 +433,15 @@ const ChiefDashboard = () => {
       // 1. Generate SHA-256 Signature Hash for high-integrity traceability (IATF 16949 / ASPICE)
       const rawText = `${progId}-${targetType}-${profile?.id || 'chief'}-${pinInput}-${new Date().toISOString()}`;
       const msgBuffer = new TextEncoder().encode(rawText);
-      const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const signatureHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      let signatureHash = '';
+      if (window.crypto && window.crypto.subtle) {
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        signatureHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } else {
+        // Fallback for insecure contexts (e.g. non-HTTPS IP access)
+        signatureHash = 'FALLBACK_HASH_' + btoa(rawText).replace(/=/g, '');
+      }
 
       console.log('IATF 16949 Compliant signature hash computed:', signatureHash);
 
@@ -557,6 +565,61 @@ const ChiefDashboard = () => {
           .eq('id', progId);
         if (progErr) throw progErr;
 
+        // Store in the dedicated serial production releases table
+        const { error: relErr } = await supabase.from('serial_production_releases').insert({
+          program_id: progId,
+          approved_by: profile?.full_name || 'Chief Engineer',
+          signature_hash: signatureHash
+        });
+        if (relErr) console.warn('Could not record serial production release:', relErr);
+
+        try {
+          // Fetch ebom parts
+          const { data: ebomParts } = await supabase
+            .from('ebom')
+            .select('part_number, part_name, revision, quantity, material, drawing_number, uom')
+            .eq('program_id', progId);
+
+          // Fetch approved PPAP submissions
+          const { data: ppapSubmissions } = await supabase
+            .from('ppap_submissions')
+            .select('supplier_name, submission_level, status, psw_url')
+            .eq('program_id', progId)
+            .eq('status', 'Approved');
+
+          // Fetch approved ECO requests
+          const { data: ecoRequests } = await supabase
+            .from('eco_requests')
+            .select('id, title, status')
+            .eq('program_id', progId)
+            .eq('status', 'Approved');
+
+          const ecoPayload = (ecoRequests || []).map(ec => ({
+            eco_id: ec.id,
+            title: ec.title,
+            status: ec.status
+          }));
+
+          // Upsert into autoscm_handoffs table
+          const { error: handoffErr } = await supabase.from('autoscm_handoffs').upsert({
+            program_id: progId,
+            target_launch_date: esignTarget.program?.target_launch_date || null,
+            ebom_payload: ebomParts || [],
+            ppap_payload: ppapSubmissions || [],
+            eco_payload: ecoPayload,
+            released_at: new Date().toISOString(),
+            status: 'Pending SCM Transfer'
+          }, { onConflict: 'program_id' });
+
+          if (handoffErr) {
+            console.warn('Could not record AutoSCM handoff:', handoffErr.message);
+          } else {
+            console.log('Successfully recorded AutoSCM handoff for program:', progId);
+          }
+        } catch (handoffCatchErr) {
+          console.error('Error during AutoSCM handoff aggregation/upsert:', handoffCatchErr);
+        }
+
         const { data: teamMembers } = await supabase.from('users').select('id');
         const gate5Notifications = (teamMembers || []).map(member => ({
           user_id: member.id,
@@ -602,15 +665,13 @@ const ChiefDashboard = () => {
     return false;
   });
 
-  if (loading) return <div className="loader">Synchronizing Strategic Data...</div>;
-
   return (
     <div className="chief-dashboard-container">
       {showCelebration && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.92)', zIndex: 10000, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(20px)' }}>
           <motion.div initial={{ scale: 0.3, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', duration: 1 }} style={{ textAlign: 'center' }}>
             <Trophy size={110} color="#ffb703" style={{ marginBottom: '24px', filter: 'drop-shadow(0 0 35px #ffb703)' }} />
-            <h1 style={{ fontSize: '3rem', fontWeight: '900', color: 'var(--text)', margin: '0 0 16px 0', tracking: '0.05em' }}>APQP STAGE 15: RELEASE COMPLETED!</h1>
+            <h1 style={{ fontSize: '3rem', fontWeight: '900', color: '#ffb703', margin: '0 0 16px 0', tracking: '0.05em' }}>APQP STAGE 15: RELEASE COMPLETED!</h1>
             <p style={{ fontSize: '1.25rem', color: '#ffb703', maxWidth: '600px', margin: '0 auto 32px auto', lineHeight: '1.6' }}>
               Congratulations! You have successfully signed off on the final gateway, unlocking high-volume manufacturing.
             </p>
@@ -690,7 +751,18 @@ const ChiefDashboard = () => {
                 <h3><Snowflake size={18} /> DDR Queue</h3>
               </div>
               <div className="queue-list">
-                {ddrReviews.length === 0 ? (
+                {loading ? (
+                  Array(3).fill(0).map((_, i) => (
+                    <div key={`skeleton-ddr-${i}`} className="queue-card glass" style={{ opacity: 0.5 }}>
+                      <div className="card-top">
+                        <div className="skeleton-text" style={{ width: '60px' }}></div>
+                        <div className="skeleton-text" style={{ width: '40px' }}></div>
+                      </div>
+                      <div className="skeleton-text" style={{ width: '80%', height: '14px', margin: '6px 0 2px' }}></div>
+                      <div className="skeleton-text short" style={{ width: '50%' }}></div>
+                    </div>
+                  ))
+                ) : ddrReviews.length === 0 ? (
                   <div className="empty-state" style={{ padding: '24px', textAlign: 'center', color: '#606070' }}>No DDR reviews found</div>
                 ) : ddrReviews.map(ddr => (
                   <div
@@ -748,6 +820,13 @@ const ChiefDashboard = () => {
                       Review all engineering comments below. When all issues are resolved, click <strong style={{ color: '#00b4d8' }}>Approve DDR & Freeze Design</strong> to officially lock the CAD. A frozen design cannot be changed without an ECO.
                     </p>
                   </div>
+
+                  {/* CAD files uploaded by Design Engineer for this program */}
+                  <CadFilesViewer
+                    programId={selectedDDR.design_tasks?.program_id || selectedDDR.program_id}
+                    programName={selectedDDR.design_tasks?.programs?.program_name}
+                    defaultOpen={true}
+                  />
 
                   {/* Comments thread — read only for Chief */}
                   <h3 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', color: '#a0a0b0', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -812,7 +891,18 @@ const ChiefDashboard = () => {
             <h3><Stamp size={18} /> Executive Queue</h3>
           </div>
           <div className="queue-list">
-            {filteredPrograms.length > 0 ? filteredPrograms.map(app => (
+            {loading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={`skeleton-exec-${i}`} className="queue-card glass" style={{ opacity: 0.5 }}>
+                  <div className="card-top">
+                    <div className="skeleton-text" style={{ width: '50px' }}></div>
+                    <div className="skeleton-text" style={{ width: '40px' }}></div>
+                  </div>
+                  <div className="skeleton-text" style={{ width: '80%', height: '14px', margin: '6px 0 2px' }}></div>
+                  <div className="skeleton-text short" style={{ width: '40%' }}></div>
+                </div>
+              ))
+            ) : filteredPrograms.length > 0 ? filteredPrograms.map(app => (
               <div 
                 key={app.id} 
                 className={`queue-card glass ${selectedProgram?.id === app.id ? 'active' : ''}`}
@@ -1056,10 +1146,18 @@ const ChiefDashboard = () => {
               )}
             </div>
           ) : (
-            <div className="empty-workspace glass flex-center">
-              <Stamp size={48} className="muted-icon" />
-              <h3>Select a program from the queue to begin review</h3>
-            </div>
+            loading ? (
+              <div className="review-panel glass flex-center" style={{ minHeight: '300px' }}>
+                <div className="skeleton-text" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '16px' }}></div>
+                <div className="skeleton-text" style={{ width: '300px', height: '24px', marginBottom: '12px' }}></div>
+                <div className="skeleton-text short" style={{ width: '150px' }}></div>
+              </div>
+            ) : (
+              <div className="empty-workspace glass flex-center">
+                <Stamp size={48} className="muted-icon" />
+                <h3>Select a program from the queue to begin review</h3>
+              </div>
+            )
           )}
         </main>
           </>

@@ -25,7 +25,7 @@
   width: 64px;
   height: 64px;
   background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-  color: #000;
+  color: #fff;
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -68,7 +68,7 @@
   background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   border: none;
   border-radius: 12px;
-  color: #000;
+  color: #fff;
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
@@ -119,8 +119,8 @@
 }
 
 .role-select option {
-  background: var(--bg-deep);
-  color: white;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .login-options {

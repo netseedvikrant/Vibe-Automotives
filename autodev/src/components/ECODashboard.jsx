@@ -168,10 +168,8 @@ const ECODashboard = () => {
     return <span className="text-muted text-sm">Awaiting other department</span>;
   };
 
-  if (loading) return <div className="flex-center h-100">Loading ECO Management System...</div>;
-
   return (
-    <motion.div className="dashboard-wrapper eco-dashboard" initial={{opacity:0, y:10}} animate={{opacity:1, y:0}}>
+    <div className="dashboard-wrapper eco-dashboard">
       <header className="val-header" style={{marginBottom: '24px'}}>
         <div className="header-left">
           <div className="status-badge-val" style={{background: 'rgba(255, 59, 48, 0.1)', color: 'var(--error)'}}>
@@ -203,7 +201,21 @@ const ECODashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {ecos.length === 0 ? (
+            {loading ? (
+              Array(4).fill(0).map((_, i) => (
+                <tr key={`skeleton-eco-${i}`}>
+                  <td><div className="skeleton-text" style={{ width: '100px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '80px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '180px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '60px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '80px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '60px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '80px' }}></div></td>
+                  <td><div className="skeleton-text" style={{ width: '70px' }}></div></td>
+                  <td><div className="skeleton-text button" style={{ height: '28px', width: '90px' }}></div></td>
+                </tr>
+              ))
+            ) : ecos.length === 0 ? (
               <tr><td colSpan="5" className="text-center text-muted">No active Engineering Change Orders.</td></tr>
             ) : ecos.map(eco => (
               <React.Fragment key={eco.id}>
@@ -365,7 +377,7 @@ const ECODashboard = () => {
           </div>
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 };
 

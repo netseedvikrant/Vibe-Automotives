@@ -18,7 +18,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import './SupplierDashboard.css';
 
-const SupplierDashboard = () => {
+const SupplierDashboard = ({ activeTab = 'Dashboard' }) => {
   const { profile } = useAuth();
   const [submissions, setSubmissions] = useState([]);
   const [activePrograms, setActivePrograms] = useState([]);
@@ -58,7 +58,10 @@ const SupplierDashboard = () => {
       const { data: subData } = await query;
       setSubmissions(subData || []);
 
-      const { data: progData } = await supabase.from('programs').select('*');
+      const { data: progData } = await supabase
+        .from('programs')
+        .select('*')
+        .order('created_at', { ascending: false });
       setActivePrograms(progData || []);
       if (progData && progData.length > 0) {
         setProgramId(progData[0].id);
@@ -198,140 +201,182 @@ const SupplierDashboard = () => {
     <div className="supplier-portal-container">
       <header className="portal-header">
         <div className="header-info">
-          <h1>Supplier Collaboration Portal</h1>
+          <h1>
+            {activeTab === 'My PPAP' ? 'PPAP Submissions Center' : 
+             activeTab === 'Specs' ? 'Technical Specifications' : 
+             activeTab === 'Notifications' ? 'Supplier Bulletins & Notifications' : 
+             'Supplier Collaboration Portal'}
+          </h1>
           <p>{profile?.full_name || 'Supplier Portal'} (ID: {profile?.id?.substring(0, 8).toUpperCase() || 'N/A'})</p>
         </div>
-        <div className="portal-actions">
-          <button className="primary-btn" onClick={() => setIsModalOpen(true)}><Plus size={18} /> New PPAP Submission</button>
-        </div>
+        {activeTab === 'My PPAP' && (
+          <div className="portal-actions">
+            <button className="primary-btn" onClick={() => setIsModalOpen(true)}><Plus size={18} /> New PPAP Submission</button>
+          </div>
+        )}
       </header>
 
-      <section className="portal-summary">
-        <div className="summary-card glass">
-          <div className="card-header">
-            <Clock size={20} className="warning-text" />
-            <h3>Action Required</h3>
+      {activeTab === 'Dashboard' && (
+        <section className="portal-summary">
+          <div className="summary-card glass">
+            <div className="card-header">
+              <Clock size={20} className="warning-text" />
+              <h3>Action Required</h3>
+            </div>
+            <div className="action-item">
+              <p>PPAP Package for <strong>CH-229-Front-Axle</strong> was rejected. Please review comments and resubmit.</p>
+              <button className="text-btn">Review Comments <ChevronRight size={14} /></button>
+            </div>
           </div>
-          <div className="action-item">
-            <p>PPAP Package for <strong>CH-229-Front-Axle</strong> was rejected. Please review comments and resubmit.</p>
-            <button className="text-btn">Review Comments <ChevronRight size={14} /></button>
-          </div>
-        </div>
-        
-        <div className="summary-card glass">
-          <div className="card-header">
-            <CheckCircle size={20} className="green-text" />
-            <h3>Quality Rating</h3>
-          </div>
-          <div className="rating-display">
-            <span className="rating-value">4.8</span>
-            <span className="rating-label">Tier 1 Strategic Partner</span>
-          </div>
-        </div>
-      </section>
-
-      <div className="portal-main-grid">
-        <section className="submissions-grid glass">
-          <div className="section-header">
-            <h3><Package size={20} /> My PPAP Submissions</h3>
-          </div>
-          <div className="submissions-table-wrapper">
-            <table className="portal-table">
-              <thead>
-                <tr>
-                  <th>Part / Program</th>
-                  <th>Level</th>
-                  <th>Status</th>
-                  <th>Last Update</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map(sub => (
-                  <React.Fragment key={sub.id}>
-                    <tr>
-                      <td>
-                        <div className="part-cell">
-                          <strong>{sub.part_number || `Part #${sub.id.substring(0,8).toUpperCase()}`}</strong>
-                          <span>{sub.programs?.program_name}</span>
-                        </div>
-                      </td>
-                      <td>Level {sub.submission_level}</td>
-                      <td>
-                        <span className={`status-pill ${sub.status.toLowerCase().replace(' ', '-')}`}>
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td>{new Date(sub.created_at).toLocaleDateString()}</td>
-                      <td>
-                        {sub.status === 'Interim Approved' && (
-                          <button
-                            className="primary-btn small"
-                            style={{ marginRight: '8px', fontSize: '0.75rem' }}
-                            onClick={() => {
-                              setResubmitTarget(sub);
-                              setResubmitCpk(sub.cpk_value?.toString() || '');
-                            }}
-                          >
-                            Update & Resubmit
-                          </button>
-                        )}
-                        <button className="icon-btn"><FileText size={16} /></button>
-                        <button className="icon-btn"><MessageSquare size={16} /></button>
-                      </td>
-                    </tr>
-                    {(sub.rejection_feedback || sub.interim_conditions) && (
-                      <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
-                        <td colSpan="5" style={{ padding: '12px 16px', borderTop: 'none', borderLeft: sub.status === 'Rejected' ? '3px solid var(--error)' : '3px solid var(--warning)' }}>
-                          {sub.status === 'Rejected' && (
-                            <div style={{ color: 'var(--error)', fontSize: '0.85rem' }}>
-                              <strong style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><AlertCircle size={14}/> Quality Assurance Feedback:</strong> 
-                              <p style={{ margin: '4px 0 0 0', color: '#ffaaaa' }}>{sub.rejection_feedback}</p>
-                            </div>
-                          )}
-                          {sub.status === 'Interim Approved' && (
-                            <div style={{ color: 'var(--warning)', fontSize: '0.85rem' }}>
-                              <strong style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14}/> Interim Approval Conditions:</strong> 
-                              <p style={{ margin: '4px 0 0 0', color: '#ffd580' }}>{sub.interim_conditions}</p>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
+          
+          <div className="summary-card glass">
+            <div className="card-header">
+              <CheckCircle size={20} className="green-text" />
+              <h3>Quality Rating</h3>
+            </div>
+            <div className="rating-display">
+              <span className="rating-value">4.8</span>
+              <span className="rating-label">Tier 1 Strategic Partner</span>
+            </div>
           </div>
         </section>
+      )}
 
-        <aside className="portal-sidebar">
-          <div className="side-card glass">
-            <h3><Info size={18} /> Technical Specifications</h3>
-            <div className="spec-list">
-              <div className="spec-item">
-                <FileText size={14} />
-                <span>GD&T Standards v2.4</span>
-                <ExternalLink size={14} />
+      <div className="portal-main-grid" style={{ display: 'grid', gridTemplateColumns: activeTab === 'Dashboard' ? '2fr 1fr' : '1fr', gap: '24px' }}>
+        {activeTab === 'My PPAP' && (
+          <section className="submissions-grid glass">
+            <div className="section-header">
+              <h3><Package size={20} /> My PPAP Submissions</h3>
+            </div>
+            <div className="submissions-table-wrapper">
+              <table className="portal-table">
+                <thead>
+                  <tr>
+                    <th>Part / Program</th>
+                    <th>Level</th>
+                    <th>Status</th>
+                    <th>Last Update</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map(sub => (
+                    <React.Fragment key={sub.id}>
+                      <tr>
+                        <td>
+                          <div className="part-cell">
+                            <strong>{sub.part_number || `Part #${sub.id.substring(0,8).toUpperCase()}`}</strong>
+                            <span>{sub.programs?.program_name}</span>
+                          </div>
+                        </td>
+                        <td>Level {sub.submission_level}</td>
+                        <td>
+                          <span className={`status-pill ${sub.status.toLowerCase().replace(' ', '-')}`}>
+                            {sub.status}
+                          </span>
+                        </td>
+                        <td>{new Date(sub.created_at).toLocaleDateString()}</td>
+                        <td>
+                          {sub.status === 'Interim Approved' && (
+                            <button
+                              className="primary-btn small"
+                              style={{ marginRight: '8px', fontSize: '0.75rem' }}
+                              onClick={() => {
+                                setResubmitTarget(sub);
+                                setResubmitCpk(sub.cpk_value?.toString() || '');
+                              }}
+                            >
+                              Update & Resubmit
+                            </button>
+                          )}
+                          <button className="icon-btn"><FileText size={16} /></button>
+                          <button className="icon-btn"><MessageSquare size={16} /></button>
+                        </td>
+                      </tr>
+                      {(sub.rejection_feedback || sub.interim_conditions) && (
+                        <tr style={{ background: 'rgba(255,255,255,0.01)' }}>
+                          <td colSpan="5" style={{ padding: '12px 16px', borderTop: 'none', borderLeft: sub.status === 'Rejected' ? '3px solid var(--error)' : '3px solid var(--warning)' }}>
+                            {sub.status === 'Rejected' && (
+                              <div style={{ color: 'var(--error)', fontSize: '0.85rem' }}>
+                                <strong style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><AlertCircle size={14}/> Quality Assurance Feedback:</strong> 
+                                <p style={{ margin: '4px 0 0 0', color: '#ffaaaa' }}>{sub.rejection_feedback}</p>
+                              </div>
+                            )}
+                            {sub.status === 'Interim Approved' && (
+                              <div style={{ color: 'var(--warning)', fontSize: '0.85rem' }}>
+                                <strong style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14}/> Interim Approval Conditions:</strong> 
+                                <p style={{ margin: '4px 0 0 0', color: '#ffd580' }}>{sub.interim_conditions}</p>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {activeTab === 'Dashboard' && (
+          <section className="glass" style={{ padding: '24px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h2 style={{ color: 'var(--accent)', margin: 0 }}>Supplier Collaboration Dashboard</h2>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+              Welcome to the Vibe Automotives Supplier Portal. This secure portal enables tier-1 partners to manage engineering deliverables, execute Part Submission Warrants (PSW), and monitor real-time approval status for assigned automotive program components.
+            </p>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+              <div className="glass-dark" style={{ padding: '16px', borderRadius: '8px', flex: 1, border: '1px solid rgba(255,255,255,0.04)' }}>
+                <strong style={{ display: 'block', fontSize: '1.25rem', color: 'var(--accent)' }}>{submissions.length}</strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Submissions</span>
               </div>
-              <div className="spec-item">
-                <FileText size={14} />
-                <span>Material Compliance - REACH</span>
-                <ExternalLink size={14} />
+              <div className="glass-dark" style={{ padding: '16px', borderRadius: '8px', flex: 1, border: '1px solid rgba(255,255,255,0.04)' }}>
+                <strong style={{ display: 'block', fontSize: '1.25rem', color: 'var(--success)' }}>
+                  {submissions.filter(s => s.status === 'Approved').length}
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Approved Parts</span>
+              </div>
+              <div className="glass-dark" style={{ padding: '16px', borderRadius: '8px', flex: 1, border: '1px solid rgba(255,255,255,0.04)' }}>
+                <strong style={{ display: 'block', fontSize: '1.25rem', color: 'var(--warning)' }}>
+                  {submissions.filter(s => s.status === 'Pending' || s.status === 'Interim Approved').length}
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>In Review</span>
               </div>
             </div>
-          </div>
+          </section>
+        )}
 
-          <div className="side-card glass">
-            <h3><AlertTriangle size={18} /> Notifications</h3>
-            <div className="portal-notifications">
-              <div className="notif">
-                <p>New design freeze for EV-X Program. Check revised drawings.</p>
-                <span>2 hours ago</span>
+
+
+        {activeTab === 'Notifications' && (
+          <section className="glass" style={{ padding: '24px', borderRadius: '12px' }}>
+            <h3 style={{ margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} /> Supplier Bulletins &amp; Notifications</h3>
+            <div className="portal-notifications" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="notif" style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', borderLeft: '4px solid var(--accent)' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>New design freeze for EV-X Program. Check revised drawings and updated CAD model links.</p>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>2 hours ago</span>
+              </div>
+              <div className="notif" style={{ padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', borderLeft: '4px solid var(--accent)' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>Reminder: Q3 IATF 16949 audit schedules are now published. Please review your readiness checklists.</p>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>1 day ago</span>
               </div>
             </div>
-          </div>
-        </aside>
+          </section>
+        )}
+
+        {activeTab === 'Dashboard' && (
+          <aside className="portal-sidebar">
+            <div className="side-card glass">
+              <h3><AlertTriangle size={18} /> Notifications</h3>
+              <div className="portal-notifications">
+                <div className="notif">
+                  <p>New design freeze for EV-X Program. Check revised drawings.</p>
+                  <span>2 hours ago</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
 
       {resubmitTarget && (

@@ -35,6 +35,19 @@
   color: var(--text-primary);
 }
 
+.create-program-btn {
+  padding: 10px 18px;
+  border-radius: 10px !important;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* KPI Grid */
 .kpi-grid {
   display: grid;
@@ -95,7 +108,7 @@
 
 .status-chip.production {
   background: linear-gradient(135deg, rgba(255, 183, 3, 0.2), rgba(0, 255, 157, 0.15));
-  color: #ffd580;
+  color: #b27400;
   border-color: rgba(255, 183, 3, 0.45);
   box-shadow: 0 0 12px rgba(255, 183, 3, 0.15);
 }
@@ -390,4 +403,13 @@ select option:focus {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.03);
 }

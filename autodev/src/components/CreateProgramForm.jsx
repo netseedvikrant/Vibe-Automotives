@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Loader2, AlertCircle, Rocket, Shield, MapPin, DollarSign, Calendar, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import './CreateProgramForm.css';
+import CustomSelect from './CustomSelect';
 
 const CreateProgramForm = ({ onClose }) => {
   const [step, setStep] = useState(1);
@@ -11,6 +12,12 @@ const CreateProgramForm = ({ onClose }) => {
   const [features, setFeatures] = useState([]);
   const [featureInput, setFeatureInput] = useState('');
   const [leadEngineers, setLeadEngineers] = useState([]);
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const minDate = `${yyyy}-${mm}-${dd}`;
 
   React.useEffect(() => {
     fetchLeadEngineers();
@@ -32,7 +39,7 @@ const CreateProgramForm = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     const formData = new FormData(e.target);
     const progName = formData.get('prog_name');
     const programCode = `AD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
@@ -96,8 +103,8 @@ const CreateProgramForm = ({ onClose }) => {
       });
 
       // 5. Update Program Status for Handoff
-      await supabase.from('programs').update({ 
-        status: 'Feasibility' 
+      await supabase.from('programs').update({
+        status: 'Feasibility'
       }).eq('id', program.id);
 
       // 6. Create Activity Log & Audit Trail
@@ -138,7 +145,7 @@ const CreateProgramForm = ({ onClose }) => {
 
   return (
     <div className="modal-overlay">
-      <motion.div 
+      <motion.div
         className="modal-content glass-dark glow-border"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -148,7 +155,7 @@ const CreateProgramForm = ({ onClose }) => {
 
         {isSuccess ? (
           <div className="success-view flex-center">
-            <motion.div 
+            <motion.div
               className="success-icon-wrapper"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -182,31 +189,31 @@ const CreateProgramForm = ({ onClose }) => {
 
               {/* Target Market & Category */}
               <div className="input-group">
-                <select required id="market" name="market">
+                <CustomSelect required id="market" name="market">
                   <option value="">Target Market</option>
                   <option>North America (NAFTA)</option>
                   <option>European Union (EU)</option>
                   <option>APAC / China</option>
-                </select>
+                </CustomSelect>
               </div>
               <div className="input-group">
-                <select required id="category" name="category">
+                <CustomSelect required id="category" name="category">
                   <option value="">Vehicle Category</option>
                   <option>Battery Electric (BEV)</option>
                   <option>Plug-in Hybrid (PHEV)</option>
                   <option>Internal Combustion (ICE)</option>
                   <option>Commercial / Fleet</option>
-                </select>
+                </CustomSelect>
               </div>
 
               {/* Lead Engineer Assignment */}
               <div className="input-group full-width">
-                <select required id="lead_engineer" name="lead_engineer">
+                <CustomSelect required id="lead_engineer" name="lead_engineer">
                   <option value="">Assign Lead Engineer</option>
                   {leadEngineers.map(le => (
                     <option key={le.id} value={le.id}>{le.full_name}</option>
                   ))}
-                </select>
+                </CustomSelect>
               </div>
 
               {/* Budget & Timeline */}
@@ -216,25 +223,23 @@ const CreateProgramForm = ({ onClose }) => {
               </div>
               <div className="input-group">
                 <Calendar size={16} className="input-icon" />
-                <input type="date" placeholder="Target Launch Date" name="launch_date" />
+                <input type="date" placeholder="Target Launch Date" name="launch_date" min={minDate} />
               </div>
 
               {/* Plant & Priority */}
               <div className="input-group">
-                <MapPin size={16} className="input-icon" />
-                <select id="plant" name="plant">
+                <CustomSelect id="plant" name="plant" icon={<MapPin size={16} />}>
                   <option>Detroit Assembly</option>
                   <option>Berlin Gigafactory</option>
                   <option>Shanghai Plant 2</option>
-                </select>
+                </CustomSelect>
               </div>
               <div className="input-group">
-                <Zap size={16} className="input-icon" />
-                <select id="priority" name="priority">
+                <CustomSelect id="priority" name="priority" icon={<Zap size={16} />}>
                   <option value="Standard">Priority: Standard</option>
                   <option value="High">Priority: High (Executive)</option>
                   <option value="Critical">Priority: Critical (Launch)</option>
-                </select>
+                </CustomSelect>
               </div>
 
               {/* Features Tag Input */}
@@ -243,30 +248,13 @@ const CreateProgramForm = ({ onClose }) => {
                   {features.map((f, i) => (
                     <span key={i} className="tag">{f}</span>
                   ))}
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={featureInput}
                     onChange={(e) => setFeatureInput(e.target.value)}
                     onKeyDown={handleAddFeature}
-                    placeholder="Key Features (Press Enter to add)..." 
+                    placeholder="Key Features (Press Enter to add)..."
                   />
-                </div>
-              </div>
-
-              {/* Risks Selector */}
-              <div className="input-group full-width">
-                <div className="risk-selector glass">
-                  <Shield size={16} />
-                  <span>Primary Risk Factors:</span>
-                  <label className="checkbox-label">
-                    <input type="checkbox" /> Supply Chain
-                  </label>
-                  <label className="checkbox-label">
-                    <input type="checkbox" /> Regulatory
-                  </label>
-                  <label className="checkbox-label">
-                    <input type="checkbox" /> Thermal Management
-                  </label>
                 </div>
               </div>
 

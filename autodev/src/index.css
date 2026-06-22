@@ -1,17 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-deep: #f8fafc;
-  --bg-surface: rgba(255, 255, 255, 0.95);
-  --bg-card: rgba(255, 255, 255, 0.95);
+  --bg-deep: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
   --accent: #1d4ed8;
   --accent-glow: rgba(29, 78, 216, 0.15);
-  --accent-secondary: #3b82f6;
-  --text-primary: #020617;
-  --text-secondary: #334155;
-  --text-muted: #94a3b8;
-  --border: rgba(226, 232, 240, 0.8);
-  --border-bright: rgba(203, 213, 225, 0.9);
+  --accent-secondary: #2563eb;
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-muted: #000000;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-bright: rgba(0, 0, 0, 0.15);
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
@@ -57,31 +57,46 @@ body::before {
 
 /* Glassmorphism Classes */
 .glass, .glass-card {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
   border-radius: 0.75rem !important; /* rounded-xl */
+  color: #000000 !important;
 }
 
 .glass-dark, .dark-glass {
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(15px) !important;
-  -webkit-backdrop-filter: blur(15px) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: #ffffff !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #000000 !important;
 }
 
 /* Scoped variables for Dark Glass components to ensure legibility */
 .glass-dark, .dark-glass, [class*="glass-dark"], [class*="dark-glass"] {
-  --bg-deep: #0f172a;
-  --bg-surface: rgba(15, 23, 42, 0.95);
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --text-primary: #ffffff;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-bright: rgba(255, 255, 255, 0.15);
+  --bg-deep: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #000000;
+  --text-secondary: #000000;
+  --text-muted: #000000;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-bright: rgba(0, 0, 0, 0.15);
+}
+
+/* Fix light glass styling inside dark glass containers */
+.glass-dark .glass,
+.dark-glass .glass,
+[class*="glass-dark"] .glass,
+[class*="dark-glass"] .glass {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #000000 !important;
+}
+
+.glass-dark .glass:hover,
+.dark-glass .glass:hover,
+[class*="glass-dark"] .glass:hover,
+[class*="dark-glass"] .glass:hover {
+  background: rgba(0, 0, 0, 0.02) !important;
 }
 
 .glow-border {
@@ -230,7 +245,7 @@ body::before {
 }
 
 .logo-text {
-  background: linear-gradient(to right, #ffffff, #94a3b8) !important;
+  background: linear-gradient(to right, #000000, var(--accent)) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -352,3 +367,63 @@ button:not(.nav-item) {
   background: #94a3b8 !important;
   color: #0f172a !important;
 }
+
+/* Global fallback to prevent white-on-white text in select dropdown options */
+select option {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* Premium Dark-Theme Loading Skeletons */
+.skeleton-text {
+  height: 12px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+  animation: loading-skeleton-animation 1.5s infinite linear;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.skeleton-text.short {
+  width: 60%;
+}
+
+.skeleton-text.number {
+  height: 28px;
+  width: 60px;
+  margin-top: 4px;
+}
+
+.skeleton-text.button {
+  height: 32px;
+  width: 100px;
+  border-radius: 6px;
+}
+
+.skeleton-card {
+  background: rgba(255, 255, 255, 0.01) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+@keyframes loading-skeleton-animation {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+

@@ -69,8 +69,8 @@
   font-weight: 600;
 }
 
-.status-pill.scheduled { background: rgba(255,255,255,0.1); color: white; }
-.status-pill.in-progress { background: rgba(0, 242, 255, 0.1); color: var(--accent); }
+.status-pill.scheduled { background: var(--border); color: var(--text-primary); }
+.status-pill.in-progress { background: rgba(29, 78, 216, 0.1); color: var(--accent); }
 .status-pill.passed { background: rgba(0, 255, 157, 0.1); color: var(--success); }
 .status-pill.failed { background: rgba(255, 51, 102, 0.1); color: var(--error); }
 

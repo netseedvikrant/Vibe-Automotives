@@ -179,14 +179,8 @@ const LeadDashboard = () => {
     }
   };
 
-  if (loading) return <div className="loader">Initializing R&D Environment...</div>;
-
   return (
-    <motion.div 
-      className="lead-dashboard-wrapper"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
+    <div className="lead-dashboard-wrapper">
       <div className="blueprint-overlay"></div>
       
       <header className="lead-header">
@@ -198,13 +192,19 @@ const LeadDashboard = () => {
         <div className="project-switcher glass">
           <Layers size={18} />
           <select 
-            value={selectedProgram?.id} 
+            value={selectedProgram?.id || ''} 
             onChange={(e) => setSelectedProgram(pendingTasks.find(p => p.id === e.target.value))}
           >
-            <option value="">Select Pending Feasibility Review...</option>
-            {pendingTasks.map(p => (
-              <option key={p.id} value={p.id}>{p.program_code}: {p.program_name}</option>
-            ))}
+            {loading ? (
+              <option value="">Loading tasks...</option>
+            ) : (
+              <>
+                <option value="">Select Pending Feasibility Review...</option>
+                {pendingTasks.map(p => (
+                  <option key={p.id} value={p.id}>{p.program_code}: {p.program_name}</option>
+                ))}
+              </>
+            )}
           </select>
         </div>
       </header>
@@ -322,11 +322,19 @@ const LeadDashboard = () => {
           </main>
         </div>
       ) : (
-        <div className="empty-workspace glass flex-center">
-          <Terminal size={48} className="muted-icon" />
-          <h2>Select a Pending Program to Begin Technical Review</h2>
-          <p>Assigned feasibility tasks will appear in the selector above.</p>
-        </div>
+        loading ? (
+          <div className="empty-workspace glass flex-center">
+            <div className="skeleton-text" style={{ width: '48px', height: '48px', borderRadius: '50%', marginBottom: '16px' }}></div>
+            <div className="skeleton-text" style={{ width: '280px', height: '20px', marginBottom: '12px' }}></div>
+            <div className="skeleton-text short" style={{ width: '180px' }}></div>
+          </div>
+        ) : (
+          <div className="empty-workspace glass flex-center">
+            <Terminal size={48} className="muted-icon" />
+            <h2>Select a Pending Program to Begin Technical Review</h2>
+            <p>Assigned feasibility tasks will appear in the selector above.</p>
+          </div>
+        )
       )}
 
       {/* Activity stream footer */}
@@ -335,60 +343,72 @@ const LeadDashboard = () => {
           <h3><Activity size={18} /> Engineering Activity Stream</h3>
         </div>
         <div className="tech-activity-list">
-          {reworkRequired.length > 0 && (
-            <div style={{ marginBottom: '12px', padding: '12px 16px', background: 'rgba(255, 77, 77, 0.07)', border: '1px solid rgba(255, 77, 77, 0.25)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#ff6b6b', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                <ShieldAlert size={14} /> ⚠️ REWORK REQUIRED
+          {loading ? (
+            Array(2).fill(0).map((_, i) => (
+              <div key={`skeleton-act-${i}`} className="tech-activity-item" style={{ opacity: 0.5 }}>
+                <div className="skeleton-text" style={{ width: '80px', marginRight: '16px' }}></div>
+                <div className="skeleton-text" style={{ width: '300px' }}></div>
+                <div className="skeleton-text" style={{ width: '60px', marginLeft: 'auto' }}></div>
               </div>
-              {reworkRequired.map(p => (
-                <div key={p.id} className="tech-activity-item" style={{ background: 'rgba(255,77,77,0.04)', borderLeft: '2px solid #ff4d4d', paddingLeft: '10px' }}>
-                  <span className="time font-mono" style={{ color: '#ff6b6b' }}>[REWORK]</span>
-                  <span className="msg"><strong>{p.program_name}</strong> — {getReworkDirective(p.id)}</span>
-                  <span className="user">@Chief</span>
+            ))
+          ) : (
+            <>
+              {reworkRequired.length > 0 && (
+                <div style={{ marginBottom: '12px', padding: '12px 16px', background: 'rgba(255, 77, 77, 0.07)', border: '1px solid rgba(255, 77, 77, 0.25)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#ff6b6b', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                    <ShieldAlert size={14} /> ⚠️ REWORK REQUIRED
+                  </div>
+                  {reworkRequired.map(p => (
+                    <div key={p.id} className="tech-activity-item" style={{ background: 'rgba(255,77,77,0.04)', borderLeft: '2px solid #ff4d4d', paddingLeft: '10px' }}>
+                      <span className="time font-mono" style={{ color: '#ff6b6b' }}>[REWORK]</span>
+                      <span className="msg"><strong>{p.program_name}</strong> — {getReworkDirective(p.id)}</span>
+                      <span className="user">@Chief</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-          {awaitingDesignTasks.length > 0 && (
-            <div style={{ marginBottom: '12px', padding: '12px 16px', background: 'rgba(0, 255, 157, 0.06)', border: '1px solid rgba(0, 255, 157, 0.25)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#00ff9d', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                <CheckCircle2 size={14} /> ✅ GATE 0 APPROVED — AWAITING DESIGN TASKS
-              </div>
-              {awaitingDesignTasks.map(p => (
-                <div key={p.id} className="tech-activity-item" style={{ background: 'rgba(0,255,157,0.04)', borderLeft: '2px solid #00ff9d', paddingLeft: '10px' }}>
-                  <span className="time font-mono" style={{ color: '#00ff9d' }}>[DESIGN]</span>
-                  <span className="msg"><strong>{p.program_name}</strong> — Gate 0 signed off. Design tasks are being assigned to the Design Engineer.</span>
-                  <span className="user">@Chief</span>
+              )}
+              {awaitingDesignTasks.length > 0 && (
+                <div style={{ marginBottom: '12px', padding: '12px 16px', background: 'rgba(0, 255, 157, 0.06)', border: '1px solid rgba(0, 255, 157, 0.25)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#00ff9d', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                    <CheckCircle2 size={14} /> ✅ GATE 0 APPROVED — AWAITING DESIGN TASKS
+                  </div>
+                  {awaitingDesignTasks.map(p => (
+                    <div key={p.id} className="tech-activity-item" style={{ background: 'rgba(0,255,157,0.04)', borderLeft: '2px solid #00ff9d', paddingLeft: '10px' }}>
+                      <span className="time font-mono" style={{ color: '#00ff9d' }}>[DESIGN]</span>
+                      <span className="msg"><strong>{p.program_name}</strong> — Gate 0 signed off. Design tasks are being assigned to the Design Engineer.</span>
+                      <span className="user">@Chief</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-          {awaitingChiefReview.length > 0 && (
-            <div style={{ marginBottom: '12px', padding: '12px 16px', background: 'rgba(255, 160, 50, 0.07)', border: '1px solid rgba(255, 160, 50, 0.25)', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#ffaa33', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                <Zap size={14} /> ⚠️ AWAITING CHIEF ENGINEER REVIEW
-              </div>
-              {awaitingChiefReview.map(p => (
-                <div key={p.id} className="tech-activity-item" style={{ background: 'rgba(255,160,50,0.04)', borderLeft: '2px solid #ffaa33', paddingLeft: '10px' }}>
-                  <span className="time font-mono" style={{ color: '#ffaa33' }}>[CONDITIONAL]</span>
-                  <span className="msg">Conditional Approval submitted for <strong>{p.program_name}</strong> — Chief Engineer is reviewing.</span>
-                  <span className="user">@Chief</span>
+              )}
+              {awaitingChiefReview.length > 0 && (
+                <div style={{ marginBottom: '12px', padding: '12px 16px', background: 'rgba(255, 160, 50, 0.07)', border: '1px solid rgba(255, 160, 50, 0.25)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#ffaa33', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                    <Zap size={14} /> ⚠️ AWAITING CHIEF ENGINEER REVIEW
+                  </div>
+                  {awaitingChiefReview.map(p => (
+                    <div key={p.id} className="tech-activity-item" style={{ background: 'rgba(255,160,50,0.04)', borderLeft: '2px solid #ffaa33', paddingLeft: '10px' }}>
+                      <span className="time font-mono" style={{ color: '#ffaa33' }}>[CONDITIONAL]</span>
+                      <span className="msg">Conditional Approval submitted for <strong>{p.program_name}</strong> — Chief Engineer is reviewing.</span>
+                      <span className="user">@Chief</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+              {pendingTasks.length > 0 ? (
+                <div className="tech-activity-item">
+                  <span className="time font-mono">[URGENT]</span>
+                  <span className="msg">New Feasibility Review assigned for {pendingTasks[0].program_name}</span>
+                  <span className="user">@System</span>
+                </div>
+              ) : awaitingChiefReview.length === 0 && reworkRequired.length === 0 && awaitingDesignTasks.length === 0 ? (
+                <p className="muted-text">No active workflow tasks assigned.</p>
+              ) : null}
+            </>
           )}
-          {pendingTasks.length > 0 ? (
-            <div className="tech-activity-item">
-              <span className="time font-mono">[URGENT]</span>
-              <span className="msg">New Feasibility Review assigned for {pendingTasks[0].program_name}</span>
-              <span className="user">@System</span>
-            </div>
-          ) : awaitingChiefReview.length === 0 && reworkRequired.length === 0 && awaitingDesignTasks.length === 0 ? (
-            <p className="muted-text">No active workflow tasks assigned.</p>
-          ) : null}
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 };
 

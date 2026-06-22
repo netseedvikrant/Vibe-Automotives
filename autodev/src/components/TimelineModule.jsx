@@ -10,29 +10,86 @@ const TimelineModule = ({ initialProgramId }) => {
   const [loading, setLoading] = useState(false);
   const [editingGateId, setEditingGateId] = useState(null);
 
+  // Sync initialProgramId if it becomes available and we don't have a selection yet
+  useEffect(() => {
+    if (initialProgramId && !selectedProgramId) {
+      setSelectedProgramId(initialProgramId);
+    }
+  }, [initialProgramId, selectedProgramId]);
+
   // Temporary editing state
   const [editStatus, setEditStatus] = useState('');
   const [editPercent, setEditPercent] = useState(0);
   const [editDate, setEditDate] = useState('');
 
+  // Realtime subscription for programs list
   useEffect(() => {
     fetchPrograms();
+
+    const channelId = `timeline-programs-realtime-${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelId);
+
+    channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'programs' },
+        (payload) => {
+          console.log('Realtime program update received:', payload);
+          fetchPrograms();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
+  // Realtime subscription for gates under the selected program
   useEffect(() => {
-    if (selectedProgramId) {
-      fetchGates(selectedProgramId);
-    }
+    if (!selectedProgramId) return;
+
+    fetchGates(selectedProgramId);
+
+    const channelId = `timeline-gates-realtime-${selectedProgramId}-${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelId);
+
+    channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'apqp_gates' },
+        (payload) => {
+          const newProgramId = payload.new?.program_id;
+          const oldProgramId = payload.old?.program_id;
+          if (newProgramId === selectedProgramId || oldProgramId === selectedProgramId) {
+            console.log('Realtime gate update received for current program:', payload);
+            fetchGates(selectedProgramId);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [selectedProgramId]);
 
   const fetchPrograms = async () => {
     try {
-      const { data, error } = await supabase.from('programs').select('id, program_name, program_code');
+      const { data, error } = await supabase
+        .from('programs')
+        .select('id, program_name, program_code, current_gate, status')
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      setPrograms(data || []);
-      if (data && data.length > 0 && !selectedProgramId) {
-        setSelectedProgramId(data[0].id);
-      }
+      const programsList = data || [];
+      setPrograms(programsList);
+      
+      // Keep selectedProgramId synced with current programs
+      setSelectedProgramId(currentId => {
+        const stillExists = programsList.some(p => p.id === currentId);
+        if (stillExists) return currentId;
+        return programsList.length > 0 ? programsList[0].id : '';
+      });
     } catch (err) {
       console.error('Error fetching programs for timeline:', err);
     }
@@ -57,8 +114,8 @@ const TimelineModule = ({ initialProgramId }) => {
 
   const startEditing = (gate) => {
     setEditingGateId(gate.id);
-    setEditStatus(gate.gate_status || 'Pending');
-    setEditPercent(gate.completion_percentage || 0);
+    setEditStatus(gate.displayStatus || gate.gate_status || 'Pending');
+    setEditPercent(gate.displayCompletion || gate.completion_percentage || 0);
     setEditDate(gate.due_date || '');
   };
 
@@ -79,7 +136,57 @@ const TimelineModule = ({ initialProgramId }) => {
 
       if (error) throw error;
       setEditingGateId(null);
-      await fetchGates(selectedProgramId);
+      
+      // Fetch the updated gates first to compute current_gate
+      const { data: updatedGates, error: gatesError } = await supabase
+        .from('apqp_gates')
+        .select('*')
+        .eq('program_id', selectedProgramId)
+        .order('gate_number', { ascending: true });
+      
+      if (gatesError) throw gatesError;
+      setGates(updatedGates || []);
+
+      // Calculate the new current_gate and status for the program
+      if (updatedGates && updatedGates.length > 0) {
+        const sortedGates = [...updatedGates].sort((a, b) => a.gate_number - b.gate_number);
+        // Find the first gate that is not Completed
+        const activeGate = sortedGates.find(g => g.gate_status !== 'Completed');
+        
+        let newCurrentGate = 0;
+        let newStatus = 'Concept';
+        
+        if (!activeGate) {
+          // All gates completed
+          newCurrentGate = 5;
+          newStatus = 'Production';
+        } else {
+          newCurrentGate = activeGate.gate_number;
+          // Map gate number to program status
+          const statusMap = {
+            0: 'Concept',
+            1: 'Feasibility',
+            2: 'Design',
+            3: 'Prototype',
+            4: 'Validation',
+            5: 'PPAP'
+          };
+          newStatus = statusMap[newCurrentGate] || 'Concept';
+        }
+
+        // Update the programs table in the database
+        const { error: progError } = await supabase
+          .from('programs')
+          .update({
+            current_gate: newCurrentGate,
+            status: newStatus
+          })
+          .eq('id', selectedProgramId);
+          
+        if (progError) {
+          console.error('Error updating program current_gate/status:', progError);
+        }
+      }
       
       // Dispatch alert/notification event for toast
       const event = new CustomEvent('autodev-toast', {
@@ -117,6 +224,9 @@ const TimelineModule = ({ initialProgramId }) => {
     
     const totalDuration = maxTime - minTime;
 
+    const currentProgram = programs.find(p => p.id === selectedProgramId);
+    const currentGateNum = currentProgram ? (currentProgram.current_gate ?? 0) : 0;
+
     return sorted.map((gate, index) => {
       // Calculate start and end percentages
       let prevTime = minTime;
@@ -131,8 +241,25 @@ const TimelineModule = ({ initialProgramId }) => {
       const endPercent = Math.max(0, Math.min(100, ((currentTime - minTime) / totalDuration) * 100));
       const widthPercent = Math.max(2, endPercent - startPercent);
 
+      // Determine status and completion percentage dynamically based on program's current_gate
+      let displayStatus = gate.gate_status || 'Pending';
+      let displayCompletion = gate.completion_percentage || 0;
+
+      if (gate.gate_number < currentGateNum) {
+        displayStatus = 'Completed';
+        displayCompletion = 100;
+      } else if (gate.gate_number === currentGateNum) {
+        displayStatus = 'In Progress';
+        displayCompletion = gate.completion_percentage > 0 ? gate.completion_percentage : 25;
+      } else {
+        displayStatus = 'Pending';
+        displayCompletion = 0;
+      }
+
       return {
         ...gate,
+        displayStatus,
+        displayCompletion,
         left: startPercent,
         width: widthPercent,
         formattedDate: gate.due_date ? new Date(gate.due_date).toLocaleDateString() : 'TBD'
@@ -146,15 +273,15 @@ const TimelineModule = ({ initialProgramId }) => {
     <div className="timeline-module" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="glass padding-lg" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'white', marginBottom: '4px' }}>Interactive APQP Gantt Timeline</h3>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#000000', marginBottom: '4px' }}>Interactive APQP Gantt Timeline</h3>
           <p className="text-muted" style={{ fontSize: '0.85rem' }}>View, track and schedule milestones across gates 0 to 5 in real-time.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '0.9rem', color: '#a0a0b0' }}>Select Program:</span>
+          <span style={{ fontSize: '0.9rem', color: '#000000' }}>Select Program:</span>
           <select 
             value={selectedProgramId} 
             onChange={e => setSelectedProgramId(e.target.value)} 
-            style={{ padding: '8px 16px', background: 'rgba(20,20,25,0.95)', border: '1px solid var(--border)', borderRadius: '6px', color: 'white' }}
+            style={{ padding: '8px 16px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-primary)' }}
           >
             {programs.map(p => (
               <option key={p.id} value={p.id}>{p.program_name} ({p.program_code})</option>
@@ -170,11 +297,11 @@ const TimelineModule = ({ initialProgramId }) => {
           
           {/* Gantt Visual Chart Card */}
           <div className="dashboard-card glass" style={{ padding: '24px', position: 'relative', overflowX: 'auto' }}>
-            <h4 style={{ color: 'white', fontSize: '1rem', fontWeight: 600, marginBottom: '24px' }}>Gantt Visualizer</h4>
+            <h4 style={{ color: '#000000', fontSize: '1rem', fontWeight: 600, marginBottom: '24px' }}>Gantt Visualizer</h4>
             
             <div style={{ minWidth: '600px', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }}>
               {/* Background grid headers */}
-              <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>
+              <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', paddingBottom: '8px', fontSize: '0.75rem', color: '#000000', fontWeight: 600 }}>
                 <div style={{ width: '180px', flexShrink: 0 }}>Gate Milestone</div>
                 <div style={{ flex: 1, position: 'relative', display: 'flex', justifyContent: 'space-between' }}>
                   <span>Phase Start</span>
@@ -188,18 +315,18 @@ const TimelineModule = ({ initialProgramId }) => {
               {/* Gantt Rows */}
               {ganttItems.map((item, idx) => {
                 let barColor = 'linear-gradient(90deg, #555, #777)';
-                if (item.gate_status === 'Completed') barColor = 'linear-gradient(90deg, #10b981, #059669)';
-                else if (item.gate_status === 'In Progress') barColor = 'linear-gradient(90deg, #3b82f6, #2563eb)';
-                else if (item.gate_status === 'Blocked') barColor = 'linear-gradient(90deg, #ef4444, #dc2626)';
+                if (item.displayStatus === 'Completed') barColor = 'linear-gradient(90deg, #10b981, #059669)';
+                else if (item.displayStatus === 'In Progress') barColor = 'linear-gradient(90deg, #3b82f6, #2563eb)';
+                else if (item.displayStatus === 'Blocked') barColor = 'linear-gradient(90deg, #ef4444, #dc2626)';
 
                 return (
                   <div key={item.id} style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ width: '180px', flexShrink: 0, paddingRight: '12px' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'white', display: 'block' }}>Gate {item.gate_number}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#888', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.gate_name}</span>
+                     <div style={{ width: '180px', flexShrink: 0, paddingRight: '12px' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#000000', display: 'block' }}>Gate {item.gate_number}</span>
+                      <span style={{ fontSize: '0.75rem', color: '#000000', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{item.gate_name}</span>
                     </div>
                     
-                    <div style={{ flex: 1, height: '36px', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', position: 'relative', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <div style={{ flex: 1, height: '36px', background: 'rgba(0,0,0,0.02)', borderRadius: '6px', position: 'relative', border: '1px solid var(--border)' }}>
                       <motion.div
                         initial={{ scaleX: 0 }}
                         animate={{ scaleX: 1 }}
@@ -224,7 +351,7 @@ const TimelineModule = ({ initialProgramId }) => {
                           overflow: 'hidden'
                         }}
                       >
-                        {item.completion_percentage}%
+                        {item.displayCompletion}%
                       </motion.div>
                     </div>
                   </div>
@@ -233,9 +360,8 @@ const TimelineModule = ({ initialProgramId }) => {
             </div>
           </div>
 
-          {/* Gates Interactive Scheduler Table */}
           <div className="dashboard-card glass" style={{ padding: '24px' }}>
-            <h4 style={{ color: 'white', fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>Milestone Scheduler & Progress Panel</h4>
+            <h4 style={{ color: '#000000', fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>Milestone Scheduler & Progress Panel</h4>
             
             <table className="data-table">
               <thead>
@@ -249,7 +375,7 @@ const TimelineModule = ({ initialProgramId }) => {
                 </tr>
               </thead>
               <tbody>
-                {gates.map(gate => (
+                {ganttItems.map(gate => (
                   <tr key={gate.id}>
                     <td><strong style={{ color: 'var(--accent)' }}>Gate {gate.gate_number}</strong></td>
                     <td style={{ fontSize: '0.9rem' }}>{gate.gate_name}</td>
@@ -258,7 +384,7 @@ const TimelineModule = ({ initialProgramId }) => {
                         <select 
                           value={editStatus} 
                           onChange={e => setEditStatus(e.target.value)}
-                          style={{ padding: '4px 8px', background: 'rgba(20,20,25,0.95)', border: '1px solid var(--border)', borderRadius: '4px', color: 'white' }}
+                          style={{ padding: '4px 8px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--text-primary)' }}
                         >
                           <option value="Pending">Pending</option>
                           <option value="In Progress">In Progress</option>
@@ -266,8 +392,8 @@ const TimelineModule = ({ initialProgramId }) => {
                           <option value="Blocked">Blocked</option>
                         </select>
                       ) : (
-                        <span className={`status-pill ${gate.gate_status?.toLowerCase().replace(' ', '-')}`}>
-                          {gate.gate_status || 'Pending'}
+                        <span className={`status-pill ${gate.displayStatus.toLowerCase().replace(' ', '-')}`}>
+                          {gate.displayStatus}
                         </span>
                       )}
                     </td>
@@ -285,7 +411,7 @@ const TimelineModule = ({ initialProgramId }) => {
                           <span style={{ fontSize: '0.8rem', width: '32px' }}>{editPercent}%</span>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '0.85rem' }}>{gate.completion_percentage || 0}%</span>
+                        <span style={{ fontSize: '0.85rem' }}>{gate.displayCompletion}%</span>
                       )}
                     </td>
                     <td>
@@ -294,7 +420,7 @@ const TimelineModule = ({ initialProgramId }) => {
                           type="date" 
                           value={editDate} 
                           onChange={e => setEditDate(e.target.value)}
-                          style={{ padding: '4px 8px', background: 'rgba(20,20,25,0.95)', border: '1px solid var(--border)', borderRadius: '4px', color: 'white', fontSize: '0.85rem' }}
+                          style={{ padding: '4px 8px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.85rem' }}
                         />
                       ) : (
                         <span style={{ fontSize: '0.85rem', fontFamily: 'monospace' }}>

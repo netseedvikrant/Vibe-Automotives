@@ -17,7 +17,12 @@ const DashboardSwitcher = ({ activeTab }) => {
   const role = profile?.role;
 
   if (profileLoading) {
-    return <div className="loader">Synchronizing Industrial Data...</div>;
+    return (
+      <div className="flex-center" style={{ height: '80vh', flexDirection: 'column', gap: '16px' }}>
+        <div className="loader" style={{ animation: 'none' }}></div>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '1rem', fontWeight: '500' }}>Synchronizing Industrial Data...</div>
+      </div>
+    );
   }
 
   switch (role) {
@@ -30,15 +35,15 @@ const DashboardSwitcher = ({ activeTab }) => {
     case 'Design Engineer':
       return <DesignDashboard />;
     case 'Validation Engineer':
-      return <ValidationDashboard />;
+      return <ValidationDashboard activeTab={activeTab} />;
     case 'Quality Engineer':
-      return <QualityDashboard />;
+      return <QualityDashboard activeTab={activeTab} />;
     case 'Supplier Engineer':
-      return <SupplierDashboard />;
+      return <SupplierDashboard activeTab={activeTab} />;
     case 'Manufacturing Engineer':
       return <ManufacturingDashboard />;
     case 'Procurement Engineer':
-      return <ProcurementDashboard />;
+      return <ProcurementDashboard activeTab={activeTab} />;
     case 'Admin':
       return <AdminDashboard />;
     case 'CEO':

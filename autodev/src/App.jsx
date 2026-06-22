@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
-import Navbar from './components/Navbar';
 import CreateProgramForm from './components/CreateProgramForm';
 import LoginPage from './pages/LoginPage';
 import DashboardSwitcher from './components/DashboardSwitcher';
@@ -13,7 +12,7 @@ import ChiefDashboard from './components/ChiefDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
 
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const AppContent = () => {
   const { user, profile, loading } = useAuth();
@@ -23,6 +22,28 @@ const AppContent = () => {
   const [toasts, setToasts] = useState([]);
 
   React.useEffect(() => {
+    // Intercept native browser alert() dialogs and route them to custom in-app toasts
+    const originalAlert = window.alert;
+    window.alert = (message) => {
+      if (!message) return;
+      const strMessage = String(message);
+      const isError = /error|failed|invalid|required/i.test(strMessage);
+      const isSuccess = /success|approved|completed|authorized|mapped|signed off/i.test(strMessage);
+      
+      const type = isError ? 'error' : isSuccess ? 'success' : 'info';
+      const title = isError ? 'System Alert' : isSuccess ? 'Operation Successful' : 'Notification';
+
+      const event = new CustomEvent('autodev-toast', {
+        detail: {
+          title,
+          message: strMessage,
+          type,
+          user_id: null
+        }
+      });
+      window.dispatchEvent(event);
+    };
+
     const handleToast = (e) => {
       const notif = e.detail;
       // Suppress toast notifications intended for other users
@@ -33,11 +54,17 @@ const AppContent = () => {
       setToasts(prev => [...prev, { id, ...notif }]);
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
-      }, 5000);
+      }, 6000);
     };
 
+    const handleOpenModal = () => setShowCreateModal(true);
+    window.addEventListener('open-new-program-modal', handleOpenModal);
     window.addEventListener('autodev-toast', handleToast);
-    return () => window.removeEventListener('autodev-toast', handleToast);
+    return () => {
+      window.removeEventListener('open-new-program-modal', handleOpenModal);
+      window.removeEventListener('autodev-toast', handleToast);
+      window.alert = originalAlert;
+    };
   }, [profile?.id]);
 
   if (loading) {
@@ -53,19 +80,21 @@ const AppContent = () => {
     return <LoginPage />;
   }
 
+  const hideSidebar = false;
+
   return (
-    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        isCollapsed={isSidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-      />
+    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''} ${hideSidebar ? 'no-sidebar' : ''}`}>
+      {!hideSidebar && (
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          isCollapsed={isSidebarCollapsed}
+          setCollapsed={setSidebarCollapsed}
+        />
+      )}
       
       <main className="main-content">
-        <Navbar setShowCreateModal={setShowCreateModal} />
-        
-        <div className="content-area">
+        <div className={`content-area ${activeTab.toLowerCase().replace(/\s+/g, '-')}-layout`}>
           {/* Role-specific Dashboards (via DashboardSwitcher) */}
           {['Dashboard', 'Programs', 'APQP Gates', 'Timeline', 'Teams',
             'MBOM Review', 'Process Plans', 'Supplier Sourcing',
@@ -91,7 +120,7 @@ const AppContent = () => {
           ) : activeTab === 'eBOM' || activeTab === 'CAD Models' ? (
             <EBOMDashboard />
           ) : ['Test Schedule', 'DVP&R', 'Failures'].includes(activeTab) ? (
-            <ValidationDashboard />
+            <ValidationDashboard activeTab={activeTab} />
           ) : activeTab === 'ECOs' ? (
             <ECODashboard />
           ) : (
@@ -132,7 +161,11 @@ const AppContent = () => {
               exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
               style={{ 
                 background: 'rgba(18, 18, 23, 0.95)', 
-                borderLeft: '4px solid var(--accent)',
+                borderLeft: `4px solid ${
+                  t.type === 'error' ? '#ef4444' :
+                  t.type === 'success' ? '#10b981' :
+                  'var(--accent)'
+                }`,
                 borderTop: '1px solid rgba(255,255,255,0.08)',
                 borderRight: '1px solid rgba(255,255,255,0.08)',
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
@@ -149,7 +182,14 @@ const AppContent = () => {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <strong style={{ color: 'var(--accent)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.title}</strong>
+                <strong style={{ 
+                  color: t.type === 'error' ? '#ef4444' :
+                         t.type === 'success' ? '#10b981' :
+                         'var(--accent)', 
+                  fontSize: '0.9rem', 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.5px' 
+                }}>{t.title}</strong>
                 <button 
                   onClick={() => setToasts(prev => prev.filter(item => item.id !== t.id))}
                   style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '1.1rem', padding: '0 0 0 8px', lineHeight: 1 }}

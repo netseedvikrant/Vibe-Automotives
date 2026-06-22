@@ -77,7 +77,7 @@
   font-weight: 700;
   font-size: 1.25rem;
   letter-spacing: -0.5px;
-  background: linear-gradient(to right, #fff, var(--accent));
+  background: linear-gradient(to right, #000, var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -201,15 +201,16 @@
 .user-avatar {
   width: 36px;
   height: 36px;
-  background: var(--border-bright);
+  background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 0.8rem;
-  color: var(--accent);
-  border: 1px solid var(--accent-glow);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .user-info {

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Car, AlertTriangle, CheckCircle2, ShieldAlert,
-  TrendingUp, HardDrive, ArrowUpRight, Filter,
-  BarChart3, Eye, Calendar
+import { 
+  Car, AlertTriangle, CheckCircle2, ShieldAlert, 
+  TrendingUp, HardDrive, ArrowUpRight, Filter, Plus,
+  BarChart3, Eye, Calendar, Bell, CheckCheck, Workflow, Info
 } from 'lucide-react';
 import './ProgramManagerDashboard.css';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -26,17 +26,58 @@ import {
 } from 'recharts';
 
 const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
-  const { programs, activityLogs, loading } = useDashboardData();
+  const { programs, notifications: liveNotifications, loading } = useDashboardData();
+
+  const [notifications, setNotifications] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
+
+  // Fetch full notifications with program join whenever tab is active
+  useEffect(() => {
+    if (activeTab !== 'Notifications') return;
+    const fetchNotifications = async () => {
+      setNotifLoading(true);
+      try {
+        const { data } = await supabase
+          .from('notifications')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
+        // Enrich with program info by matching program_id if present
+        const programMap = Object.fromEntries(programs.map(p => [p.id, p]));
+        const enriched = (data || []).map(n => ({
+          ...n,
+          program: n.program_id ? programMap[n.program_id] : null,
+        }));
+        setNotifications(enriched);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      } finally {
+        setNotifLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, [activeTab, programs]);
+
+  const markAllRead = async () => {
+    setMarkingAll(true);
+    await supabase.from('notifications').update({ is_read: true }).eq('is_read', false);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    setMarkingAll(false);
+  };
+
+  const markOneRead = async (id) => {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+  };
 
   // Phase 5: Analytics & KPI states
   const [validationTests, setValidationTests] = useState([]);
   const [ecos, setEcos] = useState([]);
   const [risks, setRisks] = useState([]);
 
-  const [pendingApprovals, setPendingApprovals] = useState(0);
-  const [openRisks, setOpenRisks] = useState(0);
-  const [prototypesComplete, setPrototypesComplete] = useState(0);
-  const [prototypesTotal, setPrototypesTotal] = useState(0);
+  const [approvalsList, setApprovalsList] = useState([]);
+  const [buildsList, setBuildsList] = useState([]);
 
   useEffect(() => {
     const fetchAnalyticsData = async () => {
@@ -50,19 +91,11 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
         const { data: riskList } = await supabase.from('engineering_risks').select('*');
         setRisks(riskList || []);
 
-        const { data: approvals } = await supabase.from('approvals').select('id').eq('status', 'Pending');
-        setPendingApprovals(approvals?.length || 0);
+        const { data: approvals } = await supabase.from('approvals').select('id, status, created_at');
+        setApprovalsList(approvals || []);
 
-        const { data: riskData } = await supabase.from('engineering_risks').select('id, severity, impact_level, status');
-        const highSeverityRisks = (riskData || []).filter(r => {
-          const level = r.severity || r.impact_level;
-          return ['High', 'Critical'].includes(level) && (r.status === 'Open' || !r.status);
-        });
-        setOpenRisks(highSeverityRisks.length);
-
-        const { data: builds } = await supabase.from('prototype_builds').select('id, status');
-        setPrototypesTotal(builds?.length || 0);
-        setPrototypesComplete(builds?.filter(b => b.status === 'Complete').length || 0);
+        const { data: builds } = await supabase.from('prototype_builds').select('id, status, created_at');
+        setBuildsList(builds || []);
       } catch (err) {
         console.error('Error fetching analytics data:', err);
       }
@@ -127,14 +160,41 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
     { name: 'Implemented/Approved', count: ecoApproved || 15 }
   ];
 
-  // Derive KPIs from dynamic data
+  // Dynamic KPI & Trend Calculations (30-day window)
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const isRecent = (dateStr) => new Date(dateStr) > thirtyDaysAgo;
+
+  const activePrograms = programs.filter(p => !['Completed', 'Cancelled'].includes(p.status));
+  const activeProgramsTrend = activePrograms.filter(p => isRecent(p.created_at)).length;
+
+  const delayedPrograms = programs.filter(p => p.status === 'Delayed');
+  const delayedProgramsTrend = delayedPrograms.filter(p => isRecent(p.updated_at || p.created_at)).length;
+
+  const pendingApps = approvalsList.filter(a => a.status === 'Pending');
+  const pendingAppsTrend = pendingApps.filter(a => isRecent(a.created_at)).length;
+
+  const highSeverityRisks = risks.filter(r => {
+    const level = r.severity || r.impact_level;
+    return ['High', 'Critical'].includes(level) && (r.status === 'Open' || !r.status);
+  });
+  const risksTrend = highSeverityRisks.filter(r => isRecent(r.created_at)).length;
+
+  const totalBudget = activePrograms.reduce((acc, p) => acc + (p.estimated_budget || 0), 0);
+  const recentBudget = activePrograms.filter(p => isRecent(p.created_at)).reduce((acc, p) => acc + (p.estimated_budget || 0), 0);
+  const budgetTrendPct = totalBudget > 0 ? Math.round((recentBudget / totalBudget) * 100) : 0;
+
+  const prototypesTotal = buildsList.length;
+  const prototypesComplete = buildsList.filter(b => b.status === 'Complete').length;
+  const recentBuilds = buildsList.filter(b => isRecent(b.created_at)).length;
+  const prototypeTrendPct = prototypesTotal > 0 ? Math.round((recentBuilds / prototypesTotal) * 100) : 0;
+
   const kpis = [
-    { label: 'Active Programs', value: programs.length.toString(), change: '+2', icon: Car, color: 'var(--accent)' },
-    { label: 'Programs Delayed', value: programs.filter(p => p.status === 'Delayed').length.toString(), change: '+1', icon: AlertTriangle, color: 'var(--warning)' },
-    { label: 'Pending Approvals', value: pendingApprovals.toString(), change: '-4', icon: CheckCircle2, color: 'var(--success)' },
-    { label: 'Open Risks', value: openRisks.toString(), change: '+12', icon: ShieldAlert, color: 'var(--error)' },
-    { label: 'Budget Usage', value: programs.length > 0 ? `${Math.round(programs.reduce((acc, p) => acc + (p.estimated_budget || 0), 0) / 1000000)}M` : '0', change: '+5%', icon: TrendingUp, color: 'var(--accent-secondary)' },
-    { label: 'Prototype Status', value: prototypesTotal > 0 ? `${Math.round((prototypesComplete / prototypesTotal) * 100)}%` : 'N/A', change: '+2%', icon: HardDrive, color: 'var(--accent)' },
+    { label: 'Active Programs', value: activePrograms.length.toString(), change: activeProgramsTrend > 0 ? `+${activeProgramsTrend}` : '0', icon: Car, color: 'var(--accent)' },
+    { label: 'Programs Delayed', value: delayedPrograms.length.toString(), change: delayedProgramsTrend > 0 ? `+${delayedProgramsTrend}` : '0', icon: AlertTriangle, color: 'var(--warning)' },
+    { label: 'Pending Approvals', value: pendingApps.length.toString(), change: pendingAppsTrend > 0 ? `+${pendingAppsTrend}` : '0', icon: CheckCircle2, color: 'var(--success)' },
+    { label: 'Open Risks', value: highSeverityRisks.length.toString(), change: risksTrend > 0 ? `+${risksTrend}` : '0', icon: ShieldAlert, color: 'var(--error)' },
+    { label: 'Budget Usage', value: totalBudget > 0 ? `${Math.round(totalBudget / 1000000)}M` : '0', change: budgetTrendPct > 0 ? `+${budgetTrendPct}%` : '0%', icon: TrendingUp, color: 'var(--accent-secondary)' },
+    { label: 'Prototype Status', value: prototypesTotal > 0 ? `${Math.round((prototypesComplete/prototypesTotal)*100)}%` : 'N/A', change: prototypeTrendPct > 0 ? `+${prototypeTrendPct}%` : '0%', icon: HardDrive, color: 'var(--accent)' },
   ];
 
   const avgVelocity = (() => {
@@ -187,27 +247,113 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
       <header className="dashboard-header">
         <div>
           <h1 className="text-gradient">
-            {activeTab === 'Reports' ? 'KPI Analytics & Performance' : showTimeline ? 'Program Timeline & Milestones' : 'Program Management Overview'}
+            {activeTab === 'Reports' ? 'KPI Analytics & Performance'
+              : activeTab === 'Notifications' ? 'Notifications Center'
+              : showTimeline ? 'Program Timeline & Milestones'
+              : 'Program Management Overview'}
           </h1>
           <p className="subtitle">
             {activeTab === 'Reports'
               ? 'Aggregated engineering program performance and validation metrics.'
-              : showTimeline
-                ? 'Manage gates, reschedule deadlines, and update progress.'
-                : 'Real-time status of vehicle development lifecycles across all plants.'}
+              : activeTab === 'Notifications'
+                ? 'Program activity alerts, workflow handovers, and system events.'
+                : showTimeline
+                  ? 'Manage gates, reschedule deadlines, and update progress.'
+                  : 'Real-time status of vehicle development lifecycles across all plants.'}
           </p>
         </div>
-        {activeTab !== 'Reports' && !showTimeline && (
+        {activeTab !== 'Reports' && activeTab !== 'Notifications' && !showTimeline && (
+          <div className="header-actions" style={{ display: 'flex', gap: '12px' }}>
+            <button 
+              className="create-program-btn flex-center"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-new-program-modal'))}
+            >
+              <Plus size={18} />
+              <span>New Program</span>
+            </button>
+          </div>
+        )}
+        {activeTab === 'Notifications' && (
           <div className="header-actions">
-            <button className="filter-btn glass flex-center">
-              <Filter size={16} />
-              <span>Filters</span>
+            <button
+              className="filter-btn glass flex-center"
+              onClick={markAllRead}
+              disabled={markingAll}
+              style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
+            >
+              <CheckCheck size={16} />
+              <span>{markingAll ? 'Marking...' : 'Mark All Read'}</span>
             </button>
           </div>
         )}
       </header>
 
-      {activeTab === 'Reports' ? (
+      {activeTab === 'Notifications' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {notifLoading ? (
+            <div className="flex-center" style={{ padding: '60px', color: 'var(--text-muted)' }}>
+              <Bell size={24} style={{ marginRight: '12px', opacity: 0.5 }} /> Loading notifications...
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="glass flex-center" style={{ padding: '60px', borderRadius: '12px', flexDirection: 'column', gap: '12px', color: 'var(--text-muted)' }}>
+              <Bell size={40} style={{ opacity: 0.3 }} />
+              <p>No notifications yet. Activity will appear here as programs progress.</p>
+            </div>
+          ) : notifications.map(n => {
+            const typeConfig = {
+              'Workflow': { icon: Workflow, color: 'var(--accent)', bg: 'rgba(0,242,255,0.08)' },
+              'success':  { icon: CheckCircle2, color: 'var(--success)', bg: 'rgba(0,255,157,0.08)' },
+              'warning':  { icon: AlertTriangle, color: 'var(--warning)', bg: 'rgba(255,184,0,0.08)' },
+              'error':    { icon: ShieldAlert, color: 'var(--error)', bg: 'rgba(255,77,109,0.08)' },
+              'info':     { icon: Info, color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
+            };
+            const cfg = typeConfig[n.type] || typeConfig['info'];
+            const IconComp = cfg.icon;
+            return (
+              <motion.div
+                key={n.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="glass"
+                onClick={() => !n.is_read && markOneRead(n.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '16px',
+                  padding: '16px 20px',
+                  borderRadius: '12px',
+                  cursor: n.is_read ? 'default' : 'pointer',
+                  opacity: n.is_read ? 0.65 : 1,
+                  borderLeft: `3px solid ${cfg.color}`,
+                  background: n.is_read ? 'transparent' : cfg.bg,
+                  transition: 'all 0.2s',
+                }}
+              >
+                <div style={{ flexShrink: 0, marginTop: '2px' }}>
+                  <IconComp size={20} color={cfg.color} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                     <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff' }}>{n.title}</span>
+                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                       {new Date(n.created_at).toLocaleString()}
+                     </span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{n.message}</p>
+                  {n.program && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '0.78rem', color: cfg.color, background: cfg.bg, padding: '3px 10px', borderRadius: '20px', border: `1px solid ${cfg.color}40` }}>
+                      <Car size={12} /> {n.program.program_code} — {n.program.program_name}
+                    </span>
+                  )}
+                </div>
+                {!n.is_read && (
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: cfg.color, flexShrink: 0, marginTop: '6px', boxShadow: `0 0 8px ${cfg.color}` }} />
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : activeTab === 'Reports' ? (
         <div className="reports-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -217,14 +363,14 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
             <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase' }}>Overall DVP&R Pass Rate</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#00ff9d', marginTop: '8px' }}>
-                {validationTests.length > 0
+                {validationTests.length > 0 
                   ? `${Math.round((validationTests.filter(t => t.status === 'Passed').length / validationTests.length) * 100)}%`
                   : '85.7%'}
               </div>
             </div>
             <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase' }}>Active ECNs in Loop</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--warning)', marginTop: '8px' }}>{ecos.length || 14} Requests</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#ffb703', marginTop: '8px' }}>{ecos.length || 14} Requests</div>
             </div>
             <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase' }}>High & Critical Risks</div>
@@ -233,24 +379,24 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px' }}>
-            <div className="glass" style={{ padding: '24px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '340px' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Program APQP Completion Progress</h3>
+            <div className="glass" style={{ padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '340px' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>Program APQP Completion Progress</h3>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={progressData.length > 0 ? progressData : [
                   { name: 'Falcon X', 'Completion %': 78 },
                   { name: 'CyberTruck', 'Completion %': 52 },
                   { name: 'Horizon EV', 'Completion %': 95 }
                 ]}>
-                  <XAxis dataKey="name" stroke="#888" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#888" fontSize={11} tickLine={false} unit="%" />
-                  <Tooltip contentStyle={{ background: '#121217', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }} />
+                  <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={11} tickLine={false} />
+                  <YAxis stroke="var(--text-secondary)" fontSize={11} tickLine={false} unit="%" />
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
                   <Bar dataKey="Completion %" fill="var(--accent)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="glass" style={{ padding: '24px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '340px' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Validation Test Status Breakdown</h3>
+            <div className="glass" style={{ padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '340px' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>Validation Test Status Breakdown</h3>
               <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: '16px' }}>
                 <ResponsiveContainer width="60%" height={240}>
                   <PieChart>
@@ -267,32 +413,73 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: '#121217', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }} />
+                    <Tooltip contentStyle={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '40%' }}>
                   {dvprData.map((entry, index) => (
                     <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div style={{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: entry.color }}></div>
-                      <span style={{ fontSize: '0.8rem', color: '#ccc', textTransform: 'capitalize' }}>{entry.name}: <strong>{entry.value}</strong></span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{entry.name}: <strong>{entry.value}</strong></span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="glass" style={{ padding: '24px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '340px', gridColumn: '1 / -1' }}>
-              <h3 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Engineering Change Orders (ECO) Processing Lifecycle</h3>
+            <div className="glass" style={{ padding: '24px', borderRadius: '8px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '340px', gridColumn: '1 / -1' }}>
+              <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>Engineering Change Orders (ECO) Processing Lifecycle</h3>
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={ecoData}>
-                  <XAxis dataKey="name" stroke="#888" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#888" fontSize={11} tickLine={false} />
-                  <Tooltip contentStyle={{ background: '#121217', borderColor: 'rgba(255,255,255,0.1)', color: '#fff' }} />
+                  <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={11} tickLine={false} />
+                  <YAxis stroke="var(--text-secondary)" fontSize={11} tickLine={false} />
+                  <Tooltip contentStyle={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
                   <Legend verticalAlign="top" height={36} />
-                  <Line type="monotone" dataKey="count" name="ECO Count" stroke="#00ff9d" strokeWidth={3} dot={{ r: 6 }} activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="count" name="ECO Count" stroke="var(--success)" strokeWidth={3} dot={{ r: 6 }} activeDot={{ r: 8 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          </div>
+        </div>
+      ) : activeTab === 'Programs' ? (
+        <div className="programs-list-container glass" style={{ padding: '24px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+          <h2 style={{ marginBottom: '20px', fontSize: '1.2rem', color: 'var(--text-primary)' }}>All Vehicle Programs</h2>
+          <div className="table-responsive">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-primary)' }}>
+                  <th style={{ padding: '12px' }}>Program Code</th>
+                  <th style={{ padding: '12px' }}>Name</th>
+                  <th style={{ padding: '12px' }}>Category</th>
+                  <th style={{ padding: '12px' }}>Market</th>
+                  <th style={{ padding: '12px' }}>Launch Date</th>
+                  <th style={{ padding: '12px' }}>Budget</th>
+                  <th style={{ padding: '12px' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {programs.map(p => (
+                  <tr key={p.id} className="table-row-hover" style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }}>
+                    <td style={{ padding: '16px 12px', fontWeight: 'bold', color: 'var(--accent)' }}>{p.program_code}</td>
+                    <td style={{ padding: '16px 12px', color: 'var(--text-primary)' }}>{p.program_name}</td>
+                    <td style={{ padding: '16px 12px', color: 'var(--text-secondary)' }}>{p.vehicle_category}</td>
+                    <td style={{ padding: '16px 12px', color: 'var(--text-secondary)' }}>{p.target_market}</td>
+                    <td style={{ padding: '16px 12px', color: 'var(--text-secondary)' }}>{p.target_launch_date ? new Date(p.target_launch_date).toLocaleDateString() : 'TBD'}</td>
+                    <td style={{ padding: '16px 12px', color: 'var(--text-secondary)' }}>{p.estimated_budget ? `$${(p.estimated_budget / 1000000).toFixed(1)}M` : 'N/A'}</td>
+                    <td style={{ padding: '16px 12px' }}>
+                      <span className={`status-chip ${(p.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {programs.length === 0 && (
+                  <tr>
+                    <td colSpan="7" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>No programs found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : showTimeline ? (

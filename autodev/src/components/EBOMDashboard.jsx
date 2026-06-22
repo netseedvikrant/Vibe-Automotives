@@ -7,7 +7,7 @@ import './EBOMDashboard.css';
 
 const EBOMDashboard = () => {
   const { profile } = useAuth();
-  const canEditBom = ['Lead Engineer', 'Chief Engineer'].includes(profile?.role);
+  const canEditBom = ['Lead Engineer', 'Chief Engineer', 'Design Engineer'].includes(profile?.role); // Cache invalidation
   const [programs, setPrograms] = useState([]);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [bomItems, setBomItems] = useState([]);
@@ -245,8 +245,6 @@ const EBOMDashboard = () => {
     }
   };
 
-  if (loading) return <div className="flex-center h-100"><Activity className="animate-spin text-accent" /></div>;
-
   return (
     <div className="ebom-dashboard">
       <header className="ebom-header">
@@ -263,16 +261,25 @@ const EBOMDashboard = () => {
             <h3>Active Programs</h3>
           </div>
           <div className="program-list">
-            {programs.map(prog => (
-              <div 
-                key={prog.id} 
-                className={`program-card ${selectedProgram?.id === prog.id ? 'active' : ''}`}
-                onClick={() => setSelectedProgram(prog)}
-              >
-                <div style={{fontWeight: 600, marginBottom: '4px'}}>{prog.program_name}</div>
-                <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{prog.id.substring(0, 8).toUpperCase()}</div>
-              </div>
-            ))}
+            {loading ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={`skeleton-prog-${i}`} className="program-card" style={{ opacity: 0.5 }}>
+                  <div className="skeleton-text" style={{ width: '70%', height: '14px', marginBottom: '6px' }}></div>
+                  <div className="skeleton-text short" style={{ width: '40%' }}></div>
+                </div>
+              ))
+            ) : (
+              programs.map(prog => (
+                <div 
+                  key={prog.id} 
+                  className={`program-card ${selectedProgram?.id === prog.id ? 'active' : ''}`}
+                  onClick={() => setSelectedProgram(prog)}
+                >
+                  <div style={{fontWeight: 600, marginBottom: '4px'}}>{prog.program_name}</div>
+                  <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{prog.id.substring(0, 8).toUpperCase()}</div>
+                </div>
+              ))
+            )}
           </div>
         </aside>
 
@@ -313,7 +320,22 @@ const EBOMDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {bomItems.length === 0 ? (
+                {loading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={`skeleton-bom-${i}`}>
+                      <td><div className="skeleton-text" style={{ width: '90px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '90px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '120px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '40px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '40px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '70px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '60px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '40px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '60px' }}></div></td>
+                      <td><div className="skeleton-text button" style={{ height: '24px', width: '80px' }}></div></td>
+                    </tr>
+                  ))
+                ) : bomItems.length === 0 ? (
                   <tr><td colSpan="10" className="text-center text-muted" style={{ textAlign: 'center', padding: '24px' }}>No parts added to the EBOM yet.</td></tr>
                 ) : (
                   bomItems.map(item => (

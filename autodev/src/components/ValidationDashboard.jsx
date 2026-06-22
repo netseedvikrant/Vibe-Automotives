@@ -5,8 +5,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import './ValidationDashboard.css';
 
-const ValidationDashboard = () => {
-  const { profile } = useAuth();
+const ValidationDashboard = ({ activeTab: propActiveTab }) => {
+  const { profile, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('test-schedule');
   const [tests, setTests] = useState([]);
   const [ecos, setEcos] = useState([]);
@@ -14,6 +14,19 @@ const ValidationDashboard = () => {
   const [programs, setPrograms] = useState([]);
   const [selectedProgramId, setSelectedProgramId] = useState('All');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (propActiveTab) {
+      const mapped = propActiveTab.toLowerCase().replace(/ /g, '-').replace('&', '');
+      if (mapped === 'dashboard' || mapped === 'test-schedule') {
+        setActiveTab('test-schedule');
+      } else if (mapped === 'dvpr' || mapped === 'dvp-r') {
+        setActiveTab('dvpr');
+      } else if (mapped === 'failures') {
+        setActiveTab('failures');
+      }
+    }
+  }, [propActiveTab]);
 
   useEffect(() => {
     loadAllData();
@@ -36,7 +49,10 @@ const ValidationDashboard = () => {
 
   const fetchPrograms = async () => {
     try {
-      const { data, error } = await supabase.from('programs').select('id, program_name');
+      const { data, error } = await supabase
+        .from('programs')
+        .select('id, program_name')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       setPrograms(data || []);
     } catch (err) {
@@ -221,11 +237,9 @@ const ValidationDashboard = () => {
     }
   };
 
-  if (loading) return <div className="flex-center h-100">Loading Validation Systems...</div>;
-
   return (
     <div className="validation-dashboard">
-      <header className="val-header">
+      <header className="val-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="header-left">
           <div className="status-badge-val">VALIDATION PHASE ACTIVE</div>
           <h1>Test Engineering & DVP&R</h1>
@@ -247,7 +261,25 @@ const ValidationDashboard = () => {
         </div>
 
         <div className="val-tab-content glass">
-          {activeTab === 'test-schedule' && (
+          {loading ? (
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="skeleton-text" style={{ width: '40%', height: '24px' }}></div>
+              <table className="data-table">
+                <tbody>
+                  {Array(4).fill(0).map((_, i) => (
+                    <tr key={`skeleton-val-${i}`}>
+                      <td><div className="skeleton-text" style={{ width: '120px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '150px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '80px' }}></div></td>
+                      <td><div className="skeleton-text" style={{ width: '60px' }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'test-schedule' && (
             <div className="test-list">
               <h3>Active Validation Tests</h3>
               <table className="data-table">
@@ -297,10 +329,10 @@ const ValidationDashboard = () => {
           )}
           {activeTab === 'dvpr' && (
             <div className="dvpr-view">
-              <div className="dvpr-filter" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: 'rgba(255,255,255,0.02)', padding: '12px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="dvpr-filter" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', background: 'rgba(0,0,0,0.02)', padding: '12px 20px', borderRadius: '8px', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '0.9rem', color: '#a0a0b0' }}>Filter by Vehicle Program:</span>
-                  <select value={selectedProgramId} onChange={e => setSelectedProgramId(e.target.value)} style={{ padding: '6px 12px', background: 'rgba(20,20,25,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: 'var(--text)' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#000000' }}>Filter by Vehicle Program:</span>
+                  <select value={selectedProgramId} onChange={e => setSelectedProgramId(e.target.value)} style={{ padding: '6px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-primary)' }}>
                     <option value="All">All Programs</option>
                     {programs.map(p => (
                       <option key={p.id} value={p.id}>{p.program_name}</option>
@@ -416,6 +448,8 @@ const ValidationDashboard = () => {
                 </tbody>
               </table>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

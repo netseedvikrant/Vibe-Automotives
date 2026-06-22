@@ -182,3 +182,43 @@
   font-size: 0.7rem;
   color: var(--text-muted);
 }
+
+/* High-Contrast styles for the light-themed glass modal */
+.modal-content.glass label {
+  color: #374151 !important;
+  font-weight: 500;
+}
+
+.modal-content.glass p {
+  color: #4b5563 !important;
+}
+
+.modal-content.glass input[type="text"],
+.modal-content.glass input[type="number"],
+.modal-content.glass input[type="file"],
+.modal-content.glass select {
+  background: #f9fafb !important;
+  border: 1px solid #d1d5db !important;
+  color: #111827 !important;
+}
+
+.modal-content.glass input:focus,
+.modal-content.glass select:focus {
+  border-color: var(--accent) !important;
+  outline: none;
+}
+
+.modal-content.glass option {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+.modal-content.glass .secondary-btn {
+  background: #f3f4f6 !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+}
+
+.modal-content.glass .secondary-btn:hover {
+  background: #e5e7eb !important;
+}
