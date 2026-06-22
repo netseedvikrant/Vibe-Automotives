@@ -98,9 +98,12 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // Modal logic for Corporate Login
 const modal = document.getElementById('loginModal');
 const openBtns = [document.getElementById('openLoginBtn'), document.getElementById('navbarLoginBtn')];
-const closeBtn = document.querySelector('.close-modal');
+const closeBtn = document.querySelector('#loginModal .close-modal') || document.querySelector('.close-modal');
 
-if (modal && closeBtn) {
+// Avoid attaching close/overlay-dismiss listeners to the static login panel on direct-login page
+const isDirectLogin = window.location.pathname.includes('direct-login.html');
+
+if (modal && closeBtn && !isDirectLogin) {
     const showModal = (e) => {
         e.preventDefault();
         modal.style.display = 'flex';
@@ -147,9 +150,9 @@ if (forgotLink && forgotModal && closeForgotBtn) {
     forgotLink.addEventListener('click', (e) => {
         e.preventDefault();
         
-        // Hide login modal first
+        // Hide login modal first if it is not the static direct-login page
         const loginModal = document.getElementById('loginModal');
-        if (loginModal) {
+        if (loginModal && !isDirectLogin) {
             loginModal.classList.remove('show');
             setTimeout(() => {
                 loginModal.style.display = 'none';
