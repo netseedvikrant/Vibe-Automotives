@@ -1,0 +1,384 @@
+
+
+PRD-03: Supply Chain &amp; Procurement Department Workflow Platform
+
+Product Name: 
+AutoSCM
+ — Supply Chain &amp; Procurement Workflow SuiteVersion: 1.0
+
+1. Product Overview
+
+AutoSCM
+ manages the complete supply chain and procurement lifecycle for an automotive 
+organization  from
+ supplier identification and onboarding to purchase requisition, RFQ, purchase order, goods receipt, and supplier performance management. It ensures lean procurement with zero parts shortages on the production line.
+
+2. Goals &amp; Objectives
+
+Digitize end-to-end procurement from PR to payment release
+
+Enable supplier onboarding, evaluation, and performance tracking
+
+Provide real-time visibility into PO status, delivery schedules, and inventory
+
+Reduce supplier delivery failures and material shortages
+
+Enable strategic sourcing with cost benchmarking
+
+3. Scope
+
+In Scope:
+
+Supplier Identification &amp; Onboarding Workflow
+
+Purchase Requisition (PR) Workflow
+
+Request for Quotation (RFQ) / Tender Workflow
+
+Supplier Evaluation &amp; Selection Workflow
+
+Purchase Order (PO) Workflow
+
+Goods Receipt Note (GRN) Workflow
+
+Supplier Performance Management Workflow
+
+Shortage Management Workflow
+
+Contract Management Workflow
+
+Out of Scope:
+
+AP (Accounts Payable) payment processing (Finance module)
+
+Physical logistics tracking (Logistics module)
+
+4. User Roles &amp; Permissions
+
+Role
+
+Permissions
+
+CPO / Procurement Head
+
+Full access, strategic sourcing decisions, contract approvals
+
+Senior Buyer
+
+Manage RFQs, POs, supplier negotiation records
+
+Buyer
+
+Create PRs, manage day-to-day POs
+
+Supplier Quality Engineer
+
+Supplier audit, PPAP, performance scores
+
+Inventory Manager
+
+View stock levels, manage safety stock, raise shortage alerts
+
+Finance Controller
+
+PO value approvals above threshold, budget check
+
+Supplier (Portal)
+
+Submit quotations, upload delivery schedules, view PO status
+
+System Admin
+
+Master data management, approval matrix config
+
+5. Core Workflows
+
+5.1 Supplier Identification &amp; Onboarding Workflow
+
+Trigger: New part/material sourcing need or existing supplier replacement
+
+Steps:
+
+Sourcing need raised by Engineering/Production (part number, annual volume, technical requirements)
+
+Supplier search: internal database + external search (supplier portal registration)
+
+Potential suppliers invited to submit Expression of Interest (EOI)
+
+EOI documents collected: company profile, financials, quality certifications, capacity
+
+Technical evaluation: Quality team visits (audit) and scores suppliers
+
+Financial evaluation: Finance team reviews supplier financials
+
+Risk assessment: Geographic risk, single-source risk, ESG compliance
+
+Approved suppliers added to Approved Vendor List (AVL)
+
+Onboarding form completed: bank details, GST/VAT, contacts, SLAs
+
+NDA signed electronically (
+DocuSign
+ integration)
+
+Supplier portal access granted with login credentials
+
+Onboarding notification sent to Procurement, Quality, Finance teams
+
+Fields: Supplier ID, Company Name, Category (Tier-1/Tier-2), Certification (IATF/ISO), Audit Score, Risk Rating, AVL Status, Onboarding Date, Account Manager
+
+5.2 Purchase Requisition (PR) Workflow
+
+Trigger: MRP-generated need or manual request
+
+Steps:
+
+PR auto-created from MRP run or manually raised by Production/Engineering
+
+PR details: part number, description, required quantity, required delivery date, cost 
+center
+
+PR routed for approval based on value matrix:
+
+&lt; ₹50,000: Department Head
+
+₹50,000–₹5,00,000: Finance Manager + Department Head
+
+₹5,00,000: CPO + CFO
+
+Approved PR converted to RFQ (if new supplier) or direct PO (if existing contract)
+
+Rejected PR returned with comments for revision
+
+Budget availability check (integration with Finance module)
+
+Fields: PR Number, Date, Requestor, Department, Part Number, Description, Quantity, UOM, Required Date, Cost 
+Center
+, Budget Code, Estimated Cost, Approval Status, Approver Chain
+
+5.3 RFQ / Tender Workflow
+
+Trigger: Approved PR without existing contract
+
+Steps:
+
+RFQ created from approved PR with technical specifications attached
+
+RFQ sent to 3+ suppliers from AVL (configurable minimum)
+
+Suppliers receive RFQ on portal with deadline for submission
+
+Supplier submits quote: unit price, lead time, payment terms, validity period
+
+Quote comparison matrix auto-generated (price, lead time, quality score)
+
+Commercial negotiation logged in system (bid history tracked)
+
+Negotiated final price documented with justification
+
+Recommended supplier selected with TCO (Total Cost of Ownership) analysis
+
+Sourcing decision approved by CPO
+
+Winning supplier notified; non-winning suppliers receive regret notification
+
+Fields: RFQ ID, PR Reference, Spec Document, Invited Suppliers, Quote Submissions, Lowest Quote, Recommended Supplier, Selection Rationale, TCO Value, Decision Date, Approved By
+
+5.4 Purchase Order (PO) Workflow
+
+Trigger: Sourcing decision approved or contract-based replenishment
+
+Steps:
+
+PO auto-generated from approved sourcing decision or PR
+
+PO details: supplier, line items, quantities, delivery schedule, delivery address, payment terms, tax codes
+
+PO approval routing (value-based matrix same as PR)
+
+Approved PO digitally sent to supplier (email + portal notification)
+
+Supplier acknowledges PO with confirmed delivery date (portal)
+
+PO acknowledgment logged with any deviations flagged
+
+Delivery tracking: supplier updates estimated delivery date on portal
+
+Advance shipping notice (ASN) submitted by supplier before dispatch
+
+GRN process triggered on goods arrival
+
+PO closure after full receipt and invoice matching
+
+Fields: PO Number, PR Reference, Supplier, Line Items, Total Value, Delivery Date, Payment Terms, Tax Amount, Currency, Acknowledgment Status, ASN Number, GRN Status, Invoice Status, PO Status (Open/Partial/Closed)
+
+5.5 Goods Receipt Note (GRN) Workflow
+
+Trigger: Physical goods arrival at plant gate/warehouse
+
+Steps:
+
+Security/Gate entry: vehicle details, supplier, delivery challan number logged
+
+Material tagged to incoming quality inspection (IQC) bay
+
+IQC team performs incoming inspection as per sampling plan (AQL)
+
+IQC result: Accept / Reject / Conditional Accept
+
+Accepted: GRN created in system, material moved to designated warehouse location
+
+Rejected: Rejection Note issued to supplier, return logistics initiated
+
+GRN quantity posted to inventory (ERP integration)
+
+Three-way matching triggered: PO × GRN × Invoice
+
+Matched invoice released to Finance for payment
+
+Unmatched invoice goes to Procurement for resolution
+
+Fields: GRN Number, PO Reference, Supplier, Material, Received Qty, IQC Qty Accepted, Qty Rejected, Rejection Reason, Warehouse Location, Bin Number, Three-Way Match Status, Invoice Number
+
+5.6 Supplier Performance Management Workflow
+
+Trigger: Monthly automated trigger
+
+Steps:
+
+Supplier scorecard auto-generated monthly from system data
+
+Scorecard parameters:
+
+On-time delivery rate (OTD %)
+
+Quality acceptance rate (IQC pass %)
+
+PPAP compliance
+
+Responsiveness (PR-to-PO acknowledgment time)
+
+NCR (Non-Conformance Report) count and closure rate
+
+Scores aggregated into Supplier Rating: Gold / Silver / Bronze / Critical
+
+Critical rating triggers escalation workflow: formal meeting, CAPA required
+
+Supplier reviews CAPA plan on portal, submits within 15 days
+
+Corrective actions tracked to closure
+
+Repeat non-performance → Supplier suspension workflow:
+
+Suspension proposal → CPO approval → Supplier notified → AVL status updated
+
+Annual supplier audit scheduling workflow (linked to Quality module)
+
+Fields: Supplier ID, Evaluation Period, OTD %, IQC Pass %, PPAP Compliance %, NCR Count, Overall Score, Rating, CAPA Required (Y/N), CAPA Status, Audit Due Date
+
+5.7 Shortage Management Workflow
+
+Trigger: MRP shortage alert or production line shortage
+
+Steps:
+
+Shortage alert auto-generated when stock &lt; safety stock level
+
+Production Planner reviews shortage list daily
+
+Expedite PO raised for critical shortage parts (priority flag)
+
+Supplier contacted for acceleration (tracked in system with response logged)
+
+Air freight authorization if critical (requires CPO/CFO approval above threshold)
+
+Alternative sourcing activated (alternate supplier from AVL)
+
+Production schedule adjusted if shortage cannot be met (linked to Manufacturing module)
+
+Root cause documented (supplier failure / forecast error / demand spike)
+
+Safety stock recalculated and updated
+
+Fields: Shortage ID, Part Number, Required Quantity, Available Stock, Gap Quantity, Supplier, PO Date, Expected Delivery, Expedite Status, Air Freight Approved (Y/N), Alternate Source Used, RCA, Safety Stock Updated
+
+5.8 Contract Management Workflow
+
+Trigger: Sourcing decision or contract renewal trigger
+
+Steps:
+
+Contract draft created from standard template (
+auto-populated
+ from sourcing decision)
+
+Legal review and redlining (with version tracking)
+
+Internal approval: Legal → Finance → CPO
+
+Supplier reviews and signs electronically (
+DocuSign
+ integration)
+
+Signed contract stored in contract repository
+
+Contract milestone tracker: expiry alerts 90/60/30 days before
+
+Contract renewal workflow triggered at 90-day mark
+
+Price escalation clauses tracked and actioned as per contract terms
+
+Contract performance reviewed quarterly (linked to supplier scorecard)
+
+Fields: Contract ID, Supplier, Contract Type, Start Date, End Date, Total Value, Payment Terms, SLAs, Key Contacts, Renewal Date, Alert Status, Signed Document Link
+
+6. Non-Functional Requirements
+
+Category
+
+Requirement
+
+Performance
+
+RFQ comparison matrix loads in &lt; 5 seconds
+
+Multi-Currency
+
+Support INR, USD, EUR, GBP, JPY
+
+Integration
+
+SAP MM/FI, Tally, Oracle SCM, supplier portal (REST API)
+
+Notifications
+
+Email + SMS for PO, shortage, contract renewal alerts
+
+Security
+
+Supplier portal with OTP-based access; internal RBAC
+
+Compliance
+
+GST invoice compliance (Indian context), VAT/customs for imports
+
+Audit
+
+All PO changes, approvals, and supplier interactions logged
+
+7. KPIs Tracked
+
+Purchase Order Cycle Time (PR to PO days)
+
+Supplier On-Time Delivery (OTD %)
+
+Incoming Quality Acceptance Rate
+
+Cost Savings achieved (vs. benchmark)
+
+Supplier Concentration Risk (% spend on top 3 suppliers)
+
+Contract Coverage % (% of spend under contract)
+
+Shortage Frequency and Impact (production hours lost)
+

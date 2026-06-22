@@ -412,6 +412,32 @@
         </div>
     </div>
 
+    <!-- CEO Manage Staff Modal -->
+    <div id="ceo-manage-staff-modal" class="ceo-modal-overlay">
+        <div class="ceo-modal-card" style="border-color: var(--primary);">
+            <div class="ceo-modal-header">
+                <span class="ceo-modal-icon">⚙️</span>
+                <h2 id="manage-modal-title">MANAGE ACCESS GUIDELINES</h2>
+            </div>
+            <div class="ceo-modal-body" style="border-left: 4px solid var(--primary); padding: 0.5rem 1rem;">
+                <p id="manage-modal-subtitle" style="font-size: 0.95rem; margin-bottom: 1.5rem; color: var(--text-muted); text-align: left;"></p>
+                <div style="display: flex; flex-direction: column; gap: 0.8rem; text-align: left; margin-bottom: 1rem;">
+                    <label style="color: #fff; font-size: 0.9rem; font-weight: 600;">Executive Action Directive:</label>
+                    <select id="ceo-manage-action" style="width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; padding: 0.8rem; font-family: inherit; font-size: 1rem; outline: none; transition: border-color 0.3s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--glass-border)'">
+                        <option value="PROMOTE" style="background:#0a0a0f;">PROMOTE - Upgrade role & security clearance</option>
+                        <option value="REVOKE" style="background:#0a0a0f;">REVOKE - Temporarily suspend portal login credentials</option>
+                        <option value="TRANSFER" style="background:#0a0a0f;">TRANSFER - Relocate to another department node</option>
+                    </select>
+                </div>
+                <div id="manage-modal-status" style="display: none; margin-top: 1rem; font-size: 0.95rem; font-weight: 600; text-align: left;"></div>
+            </div>
+            <div class="ceo-modal-footer" style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="btn-cancel-manage" class="ceo-modal-btn" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; box-shadow: none;">Cancel</button>
+                <button id="btn-submit-manage" class="ceo-modal-btn">Apply Directive</button>
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar">
         <a href="portal.html" class="logo">
             <svg width="30" height="30" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -438,7 +464,8 @@
 
     <!-- Supabase Integration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js?v=1.2"></script>
+    <script src="supabase.js?v=1.3"></script>
+    <script src="session_manager.js?v=1.3"></script>
 
     <main class="container">
         <div class="header-section" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem;">
@@ -478,6 +505,48 @@
         // Restrict access to CEO only
         let currentRecipientEmail = '';
         let currentRecipientName = '';
+        let currentManageEmail = '';
+        let currentManageName = '';
+
+        function showAppToast(message, type = 'success') {
+            const existing = document.getElementById('vibe-app-toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'vibe-app-toast';
+            toast.style.cssText = `
+                position: fixed; bottom: 30px; right: 30px;
+                background: rgba(15, 23, 42, 0.9);
+                border: 1px solid ${type === 'success' ? 'rgba(0, 255, 170, 0.4)' : 'rgba(255, 78, 78, 0.4)'};
+                color: #ffffff; padding: 1rem 1.8rem; border-radius: 10px;
+                font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 500;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+                z-index: 100000; animation: slideIn 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+                backdrop-filter: blur(10px);
+            `;
+            const icon = type === 'success' ? '✅' : '⚠️';
+            toast.innerHTML = `<span style="margin-right:8px;">${icon}</span> ${message}`;
+            document.body.appendChild(toast);
+
+            if (!document.getElementById('toast-animation-styles')) {
+                const style = document.createElement('style');
+                style.id = 'toast-animation-styles';
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateY(50px); opacity: 0; }
+                        to { transform: translateY(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            setTimeout(() => {
+                toast.style.transition = 'all 0.5s ease';
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(20px)';
+                setTimeout(() => { toast.remove(); }, 500);
+            }, 4000);
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             const userSession = sessionStorage.getItem('vibe_user');
@@ -502,6 +571,20 @@
             if (btnCancel) {
                 btnCancel.addEventListener('click', () => {
                     const modal = document.getElementById('ceo-send-message-modal');
+                    if (modal) {
+                        modal.classList.remove('active');
+                        setTimeout(() => {
+                            modal.style.display = 'none';
+                        }, 500);
+                    }
+                });
+            }
+
+            // Cancel manage listener
+            const btnCancelManage = document.getElementById('btn-cancel-manage');
+            if (btnCancelManage) {
+                btnCancelManage.addEventListener('click', () => {
+                    const modal = document.getElementById('ceo-manage-staff-modal');
                     if (modal) {
                         modal.classList.remove('active');
                         setTimeout(() => {
@@ -581,6 +664,75 @@
                         statusEl.style.color = '#ff4e4e';
                         btnSubmit.disabled = false;
                         btnSubmit.textContent = 'Send Directive';
+                    }
+                });
+            }
+
+            // Submit manage listener
+            const btnSubmitManage = document.getElementById('btn-submit-manage');
+            if (btnSubmitManage) {
+                btnSubmitManage.addEventListener('click', async () => {
+                    const selectEl = document.getElementById('ceo-manage-action');
+                    const statusEl = document.getElementById('manage-modal-status');
+                    
+                    if (!selectEl) return;
+                    
+                    const action = selectEl.value;
+                    btnSubmitManage.disabled = true;
+                    btnSubmitManage.textContent = 'Processing...';
+
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.textContent = 'Updating secure enterprise RBAC database...';
+                        statusEl.style.color = 'var(--primary)';
+                    }
+
+                    try {
+                        if (window.supabaseInit) {
+                            await window.supabaseInit;
+                        }
+                        const client = window.supabaseClient;
+                        if (!client) throw new Error("Supabase client not initialized.");
+
+                        const { error } = await client.from('activity_logs').insert({
+                            action_type: `STAFF_${action}`,
+                            action_description: `CEO executed ${action} directive on ${currentManageName} (${currentManageEmail}).`,
+                            new_values: {
+                                target_email: currentManageEmail.toLowerCase(),
+                                target_name: currentManageName,
+                                action_taken: action,
+                                executor: "CEO"
+                            }
+                        });
+
+                        if (error) throw error;
+
+                        if (statusEl) {
+                            statusEl.textContent = `Action "${action}" submitted for ${currentManageName}!`;
+                            statusEl.style.color = '#00ffaa';
+                        }
+
+                        setTimeout(() => {
+                            const modal = document.getElementById('ceo-manage-staff-modal');
+                            if (modal) {
+                                modal.classList.remove('active');
+                                setTimeout(() => {
+                                    modal.style.display = 'none';
+                                    btnSubmitManage.disabled = false;
+                                    btnSubmitManage.textContent = 'Apply Directive';
+                                    showAppToast(`Access privileges for ${currentManageName} have been successfully updated.`);
+                                }, 500);
+                            }
+                        }, 1000);
+
+                    } catch (err) {
+                        console.error("Error executing manage command:", err);
+                        if (statusEl) {
+                            statusEl.textContent = "Failed to sync updates: " + err.message;
+                            statusEl.style.color = '#ff4e4e';
+                        }
+                        btnSubmitManage.disabled = false;
+                        btnSubmitManage.textContent = 'Apply Directive';
                     }
                 });
             }
@@ -731,9 +883,25 @@
         }
 
         function manageStaff(email, name) {
-            const action = prompt(`Manage access rights for ${name} (${email}). Enter 'REVOKE' to suspend access, or 'PROMOTE' to upgrade roles:`, 'PROMOTE');
-            if (action) {
-                alert(`Action "${action}" submitted for ${name}. Changes will be synced to enterprise RBAC database.`);
+            currentManageEmail = email;
+            currentManageName = name;
+
+            const modal = document.getElementById('ceo-manage-staff-modal');
+            const subtitle = document.getElementById('manage-modal-subtitle');
+            const statusEl = document.getElementById('manage-modal-status');
+            const selectEl = document.getElementById('ceo-manage-action');
+
+            if (modal && subtitle && statusEl && selectEl) {
+                subtitle.textContent = `Configure access guidelines for: ${name} (${email})`;
+                statusEl.style.display = 'none';
+                statusEl.textContent = '';
+                selectEl.value = 'PROMOTE';
+
+                // Show modal
+                modal.style.display = 'flex';
+                // Force reflow
+                modal.offsetHeight;
+                modal.classList.add('active');
             }
         }
 

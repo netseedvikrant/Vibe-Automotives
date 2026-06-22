@@ -369,7 +369,8 @@
 
     <!-- Supabase Integration to support Sign Out -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js?v=1.2"></script>
+    <script src="supabase.js?v=1.3"></script>
+    <script src="session_manager.js?v=1.3"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const userSession = sessionStorage.getItem('vibe_user');
@@ -396,11 +397,23 @@
             const cardProcurement = document.getElementById('card-procurement');
 
             if (department === 'EXECUTIVE' || user.profile?.role === 'CEO' || user.email === 'ceo@vibe.com') {
-                // Executive CEO has unrestricted access to all modules
+                // Executive CEO has access only to the CEO card in the portal
                 console.log("Welcome Executive CEO - all systems operational.");
                 const cardCeo = document.getElementById('card-ceo');
                 if (cardCeo) {
                     cardCeo.style.display = 'flex';
+                    cardCeo.style.maxWidth = '480px';
+                    cardCeo.style.width = '100%';
+                }
+                if (cardAutodev) cardAutodev.style.display = 'none';
+                if (cardAutomfg) cardAutomfg.style.display = 'none';
+                if (cardProcurement) cardProcurement.style.display = 'none';
+                
+                // Adjust grid style to center and size the single card nicely
+                const grid = document.querySelector('.portal-grid');
+                if (grid) {
+                    grid.style.display = 'flex';
+                    grid.style.justifyContent = 'center';
                 }
             } else if (department === 'R&D') {
                 // R&D / AutoDev staff has access only to AutoDev
@@ -441,16 +454,12 @@
         }
 
         function signOut() {
-            sessionStorage.removeItem('vibe_user');
-            localStorage.removeItem('automfg-auth');
-            if (window.supabaseClient) {
-                window.supabaseClient.auth.signOut().then(() => {
-                    window.location.href = 'index.html';
-                }).catch(err => {
-                    console.error("Signout error:", err);
-                    window.location.href = 'index.html';
-                });
+            if (window.SessionManager) {
+                SessionManager.performSignOut();
             } else {
+                sessionStorage.removeItem('vibe_user');
+                localStorage.removeItem('vibe_user');
+                localStorage.removeItem('automfg-auth');
                 window.location.href = 'index.html';
             }
         }

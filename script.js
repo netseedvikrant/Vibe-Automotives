@@ -433,7 +433,7 @@ if (loginForm && loginError) {
             }
 
             // Save session
-            sessionStorage.setItem('vibe_user', JSON.stringify({
+            const sessionData = {
                 email: emailInput,
                 id: userId || 'temp-id',
                 profile: {
@@ -442,7 +442,9 @@ if (loginForm && loginError) {
                     role: emailInput === 'ceo@vibe.com' ? 'CEO' : (profile?.role || 'Staff')
                 },
                 department: department
-            }));
+            };
+            sessionStorage.setItem('vibe_user', JSON.stringify(sessionData));
+            localStorage.setItem('vibe_user', JSON.stringify(sessionData));
             
             // Redirect to unified portal
             window.location.href = 'portal.html';

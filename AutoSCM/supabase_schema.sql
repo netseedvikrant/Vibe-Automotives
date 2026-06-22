@@ -20,6 +20,7 @@ DROP TABLE IF EXISTS inventory CASCADE;
 DROP TABLE IF EXISTS production_plans CASCADE;
 DROP TABLE IF EXISTS bom_items CASCADE;
 DROP TABLE IF EXISTS bom_master CASCADE;
+DROP TABLE IF EXISTS material_list CASCADE;
 DROP TABLE IF EXISTS erp_users CASCADE;
 
 -- 1. USERS TABLE
@@ -66,7 +67,7 @@ CREATE TABLE IF NOT EXISTS bom_items (
 CREATE TABLE IF NOT EXISTS production_plans (
     plan_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_name TEXT NOT NULL,
-    bom_id UUID REFERENCES bom_master(bom_id),
+    bom_id UUID REFERENCES autoscm_handoffs(id),
     production_quantity INTEGER NOT NULL,
     production_date DATE,
     priority TEXT,
@@ -461,102 +462,68 @@ INSERT INTO shortage_alerts (material_name, required_quantity, available_quantit
 ('Brake Pad', 800, 300, 500, 'Critical');
 
 
--- ── CENTRAL CROSS-MODULE CONNECTIVITY TRIGGERS (VIBE INTEGRATION) ──
+-- ==========================================
+-- 16. MATERIAL LIST TABLE (Master Catalogue)
+-- ==========================================
 
--- Bridge 3: Scrap-to-CAPA
-ALTER TABLE defect_records ADD COLUMN IF NOT EXISTS supplier_id UUID;
+CREATE TABLE IF NOT EXISTS material_list (
+    material_id       UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    material_name     TEXT        NOT NULL,
+    part_code         TEXT        UNIQUE NOT NULL,
+    category          TEXT        NOT NULL,
+    sub_category      TEXT,
+    unit              TEXT        DEFAULT 'pcs',
+    description       TEXT,
+    standard_cost     NUMERIC     DEFAULT 0,
+    lead_time_days    INTEGER     DEFAULT 14,
+    safety_stock_qty  INTEGER     DEFAULT 50,
+    applicable_models TEXT,
+    status            TEXT        DEFAULT 'Active',
+    created_at        TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-CREATE OR REPLACE FUNCTION update_supplier_quality_score()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_supplier_id UUID;
-  v_scrap_count INT;
-  v_new_score NUMERIC;
-  v_supplier_name TEXT;
-BEGIN
-  -- Get the supplier_id from defect_records
-  SELECT supplier_id INTO v_supplier_id FROM defect_records WHERE defect_id = NEW.defect_id;
-  
-  IF v_supplier_id IS NOT NULL THEN
-    -- Count the number of scrap defects for this supplier
-    SELECT COUNT(*) INTO v_scrap_count 
-    FROM scrap_certificates sc
-    JOIN defect_records dr ON sc.defect_id = dr.defect_id
-    WHERE dr.supplier_id = v_supplier_id;
-    
-    -- Calculate new quality score (starting at 100, subtracting 5 per scrap defect)
-    v_new_score := GREATEST(0, 100 - (v_scrap_count * 5));
-    
-    -- Update the suppliers table
-    UPDATE suppliers 
-    SET quality_score = v_new_score 
-    WHERE supplier_id = v_supplier_id;
-    
-    -- If Quality Score falls below 90%, generate CAPA notification
-    IF v_new_score < 90 THEN
-      SELECT supplier_name INTO v_supplier_name FROM suppliers WHERE supplier_id = v_supplier_id;
-      
-      INSERT INTO notifications (user_role, title, message, priority, read_status)
-      VALUES (
-        'supplier_quality_engineer', 
-        'CAPA Required: ' || COALESCE(v_supplier_name, 'Unknown Supplier'), 
-        'Quality Score for ' || COALESCE(v_supplier_name, 'Unknown Supplier') || ' has dropped to ' || v_new_score || '%. Immediate corrective action is required.', 
-        'High', 
-        FALSE
-      );
-    END IF;
-  END IF;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+ALTER TABLE material_list DISABLE ROW LEVEL SECURITY;
 
-CREATE OR REPLACE TRIGGER trg_update_supplier_quality_score
-AFTER INSERT ON scrap_certificates
-FOR EACH ROW
-EXECUTE FUNCTION update_supplier_quality_score();
-
-
--- Bridge 4: Tooling-to-Procurement
-CREATE OR REPLACE FUNCTION generate_tool_replacement_pr()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_tool_name TEXT;
-BEGIN
-  SELECT tool_name INTO v_tool_name FROM tools WHERE tool_id = NEW.tool_id;
-  
-  INSERT INTO purchase_requisitions (
-    material_name,
-    part_code,
-    quantity,
-    estimated_cost,
-    procurement_type,
-    supplier_category,
-    priority,
-    status,
-    department,
-    notes,
-    created_by
-  ) VALUES (
-    'Replacement parts for tool: ' || COALESCE(v_tool_name, NEW.tool_id::text),
-    'TOOL-REP-' || UPPER(SUBSTRING(NEW.tool_id::text, 1, 8)),
-    1,
-    25000.00,
-    'Spare Parts',
-    'Tooling',
-    'High',
-    'Draft',
-    'Production',
-    'Auto-generated draft purchase requisition for tool replacement request: ' || COALESCE(NEW.reason, 'Life limit reached'),
-    NEW.requested_by
-  );
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE TRIGGER trg_generate_tool_replacement_pr
-AFTER INSERT ON tool_replacement_requests
-FOR EACH ROW
-EXECUTE FUNCTION generate_tool_replacement_pr();
+INSERT INTO material_list
+  (material_name, part_code, category, sub_category, unit, description, standard_cost, lead_time_days, safety_stock_qty, applicable_models)
+VALUES
+-- WHEELS
+('Tire',              'TYR-100', 'Wheels', 'Standard Tires',    'pcs', 'Standard passenger car tire for Electric Car Model X',           3500,  10, 100, 'EV-X'),
+('SUV Tire',          'TYR-200', 'Wheels', 'SUV Tires',         'pcs', 'Heavy-duty all-terrain tire for SUV Model S',                   4200,  12, 150, 'SUV-S'),
+('Performance Tire',  'PTY-110', 'Wheels', 'Performance Tires', 'pcs', 'High-grip performance tire for Sports Car Model R',             7800,  14,  40, 'SPR-R'),
+('Standard Tire',     'STY-100', 'Wheels', 'Standard Tires',    'pcs', 'Economy standard tire for Compact Hatchback C',                 2800,   9, 200, 'HTB-C'),
+('Premium Tire',      'PRT-100', 'Wheels', 'Premium Tires',     'pcs', 'Premium riding-comfort tire for Luxury Sedan L',                6200,  12,  60, 'SED-L'),
+('Off-road Tire',     'OFT-100', 'Wheels', 'Off-Road Tires',    'pcs', 'Reinforced off-road tire for Electric Truck T',                 5500,  14,  80, 'TRK-T'),
+('Steel Wheel',       'STW-100', 'Wheels', 'Wheel Rims',        'pcs', 'Standard steel wheel rim for Compact Hatchback C',              1800,   7, 100, 'HTB-C'),
+-- ELECTRICAL
+('Battery Pack',      'BAT-200', 'Electrical', 'EV Batteries',       'pcs', 'High-capacity lithium-ion battery pack for EV Model X',  180000, 21,  30, 'EV-X'),
+('Starter Battery',   'BAT-210', 'Electrical', 'Lead-Acid Batteries','pcs', '12V lead-acid starter battery for SUV Model S',            4500,   7,  20, 'SUV-S'),
+('Heavy Duty Battery','HDB-100', 'Electrical', 'EV Batteries',       'pcs', 'High-voltage heavy-duty battery pack for Electric Truck T',250000, 25,  10, 'TRK-T'),
+('Halogen Headlight', 'HLG-100', 'Electrical', 'Lighting',           'pcs', 'Standard halogen headlight assembly for Hatchback C',       2200,   8,  50, 'HTB-C'),
+('LED Taillight',     'LDT-100', 'Electrical', 'Lighting',           'pcs', 'LED taillight cluster for Luxury Sedan L',                  3800,  10,  40, 'SED-L'),
+-- INTERIOR
+('Front Seat',        'SET-101', 'Interior', 'Seats',    'pcs', 'Standard fabric front seat assembly for EV Model X',          8500,  14,  60, 'EV-X'),
+('Rear Seat',         'SET-102', 'Interior', 'Seats',    'pcs', 'Three-piece rear bench seat for EV Model X',                  7200,  14,  75, 'EV-X'),
+('Racing Seat',       'RST-330', 'Interior', 'Seats',    'pcs', 'Bucket racing seat with harness mount for Sports Car R',    18000,  21,  10, 'SPR-R'),
+('Cloth Seat',        'CLS-100', 'Interior', 'Seats',    'pcs', 'Economy cloth seat set for Compact Hatchback C',               5500,  12, 100, 'HTB-C'),
+('Leather Seat',      'LTS-100', 'Interior', 'Seats',    'pcs', 'Premium full-leather seat with heating for Luxury Sedan L',  22000,  21,  30, 'SED-L'),
+('Steering Wheel',    'STR-400', 'Interior', 'Controls', 'pcs', 'Multi-function steering wheel with mounted controls',          4800,  10,  30, 'EV-X'),
+('Sunroof',           'SNR-100', 'Interior', 'Roof Systems', 'pcs', 'Panoramic glass sunroof panel for Luxury Sedan L',        15000,  18,  15, 'SED-L'),
+-- BRAKES
+('Brake Pad',         'BRK-300', 'Brakes', 'Friction Components', 'pcs', 'Standard ceramic brake pad set for EV Model X',   1200,  7, 150, 'EV-X'),
+('Brake Disc',        'BRD-310', 'Brakes', 'Rotors',              'pcs', 'Ventilated brake disc rotor for SUV Model S',       3200,  8, 100, 'SUV-S'),
+-- POWERTRAIN
+('Engine Assembly',   'ENG-100', 'Powertrain', 'Engines', 'pcs', 'Complete internal combustion engine assembly for SUV S',  95000, 30,  5, 'SUV-S'),
+('Turbo Engine',      'TEG-220', 'Powertrain', 'Engines', 'pcs', 'Turbocharged high-performance engine for Sports Car R',  145000, 35,  3, 'SPR-R'),
+('Small Engine',      'SME-100', 'Powertrain', 'Engines', 'pcs', 'Compact fuel-efficient engine for Hatchback C',            55000, 25,  8, 'HTB-C'),
+('V6 Engine',         'V6E-100', 'Powertrain', 'Engines', 'pcs', 'V6 petrol engine for Luxury Sedan L',                     115000, 30,  5, 'SED-L'),
+-- BODY
+('Door Panel',        'DRP-500', 'Body', 'Panels',     'pcs', 'Stamped steel door panel for SUV Model S',                   6500,  12,  80, 'SUV-S'),
+('Carbon Door Panel', 'CDP-440', 'Body', 'Panels',     'pcs', 'Lightweight CFRP door panel for Sports Car R',              28000,  21,  10, 'SPR-R'),
+('Carbon Spoiler',    'CSP-880', 'Body', 'Aero Parts', 'pcs', 'Rear carbon fibre aerodynamic spoiler for Sports Car R',   18500,  18,   8, 'SPR-R'),
+-- CHASSIS
+('Truck Bed',          'TRB-100', 'Chassis', 'Structural', 'pcs', 'Heavy-duty load bed for Electric Truck T',               35000,  20,  20, 'TRK-T'),
+('Reinforced Chassis', 'RFC-100', 'Chassis', 'Structural', 'pcs', 'High-strength steel ladder chassis for Electric Truck T', 72000, 28,  10, 'TRK-T'),
+('Tow Hitch',          'TWH-100', 'Chassis', 'Towing',    'pcs', 'Class-IV tow hitch receiver for Electric Truck T',         8200,  10,  30, 'TRK-T')
+ON CONFLICT (part_code) DO NOTHING;
 

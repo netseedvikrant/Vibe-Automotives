@@ -318,6 +318,28 @@
             display: flex !important;
         }
 
+        /* Legal modal dialog overrides */
+        #legalModal.modal {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(5, 5, 8, 0.7) !important;
+            backdrop-filter: blur(15px) !important;
+            z-index: 9999 !important;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #legalModal.modal.show {
+            opacity: 1;
+            display: flex !important;
+        }
+
         #forgotPasswordModal .modal-content {
             max-width: 450px;
             margin: auto;
@@ -452,15 +474,50 @@
             </div>
         </div>
 
+        <!-- Legal Modal (Privacy & Terms) -->
+        <div id="legalModal" class="modal">
+            <div class="modal-content glass-effect" style="max-width: 800px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; padding: 2.5rem 2rem; border-radius: 24px; overflow: hidden; position: relative;">
+                <span class="close-modal close-legal-modal" style="position: absolute; top: 1.5rem; right: 2rem; font-size: 2.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.3s ease; z-index: 10;">&times;</span>
+                <div id="legalModalTitle" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #fff; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 0.8rem; text-align: left;">Legal Document</div>
+                <div id="legalModalBody" style="overflow-y: auto; text-align: left; padding-right: 10px; line-height: 1.8; color: var(--text-muted); font-size: 1.05rem; flex-grow: 1;">
+                    Loading...
+                </div>
+            </div>
+            <style>
+                #legalModalBody::-webkit-scrollbar {
+                    width: 6px;
+                }
+                #legalModalBody::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.02);
+                    border-radius: 10px;
+                }
+                #legalModalBody::-webkit-scrollbar-thumb {
+                    background: rgba(0, 240, 255, 0.2);
+                    border-radius: 10px;
+                }
+                #legalModalBody::-webkit-scrollbar-thumb:hover {
+                    background: rgba(0, 240, 255, 0.4);
+                }
+                .close-legal-modal:hover {
+                    color: var(--primary) !important;
+                }
+            </style>
+        </div>
+
         <div class="login-footer">
             <p>&copy; 2026 VIBE Automotives. Secured Enterprise Session.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem;">
+                <a href="privacy.html" style="color: rgba(255,255,255,0.4); text-decoration: none; margin: 0 0.5rem; transition: color 0.3s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Privacy Policy</a> | 
+                <a href="terms.html" style="color: rgba(255,255,255,0.4); text-decoration: none; margin: 0 0.5rem; transition: color 0.3s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Terms of Service</a>
+            </p>
         </div>
     </div>
 
     <!-- Supabase and standard handlers integration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js?v=1.2"></script>
-    <script src="script.js?v=1.2"></script>
+    <script src="supabase.js?v=1.3"></script>
+    <script src="session_manager.js?v=1.3"></script>
+    <script src="script.js?v=1.3"></script>
     
     <script>
         // Custom background pointer glow follow logic
@@ -488,6 +545,84 @@
             forgotModal.addEventListener('click', (e) => {
                 if (e.target === forgotModal) {
                     restoreLogin();
+                }
+            });
+        }
+
+        // Intercept Privacy Policy and Terms of Service clicks to open in our custom modal
+        document.addEventListener('click', async (e) => {
+            const target = e.target;
+            if (target && target.tagName === 'A') {
+                const href = target.getAttribute('href');
+                if (href && (href.startsWith('privacy.html') || href.startsWith('terms.html'))) {
+                    e.preventDefault();
+                    
+                    const docType = href.startsWith('privacy') ? 'privacy' : 'terms';
+                    const legalModal = document.getElementById('legalModal');
+                    const legalModalTitle = document.getElementById('legalModalTitle');
+                    const legalModalBody = document.getElementById('legalModalBody');
+
+                    if (!legalModal || !legalModalTitle || !legalModalBody) return;
+
+                    const titleText = docType === 'privacy' ? 'Privacy Policy' : 'Terms of Service';
+                    const file = docType === 'privacy' ? 'privacy.html' : 'terms.html';
+
+                    legalModalTitle.textContent = titleText;
+                    legalModalBody.innerHTML = '<div style="text-align:center; padding: 3rem; color: var(--primary); font-family:\'Outfit\',sans-serif; font-size:1.1rem;">Retrieving secure documentation...</div>';
+                    
+                    // Show modal
+                    legalModal.style.display = 'flex';
+                    setTimeout(() => {
+                        legalModal.classList.add('show');
+                    }, 10);
+                    document.body.style.overflow = 'hidden';
+
+                    try {
+                        const response = await fetch(file);
+                        if (!response.ok) throw new Error("Network response was not ok.");
+                        const html = await response.text();
+                        
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const targetSelector = docType === 'privacy' ? '.policy-card' : '.terms-card';
+                        const contentElement = doc.querySelector(targetSelector);
+
+                        if (contentElement) {
+                            const cloned = contentElement.cloneNode(true);
+                            // Reset styles to integrate seamlessly into modal container
+                            cloned.style.background = 'transparent';
+                            cloned.style.border = 'none';
+                            cloned.style.boxShadow = 'none';
+                            cloned.style.padding = '0';
+                            
+                            legalModalBody.innerHTML = '';
+                            legalModalBody.appendChild(cloned);
+                        } else {
+                            throw new Error("Content block not found.");
+                        }
+                    } catch (err) {
+                        console.error("Legal modal load failed:", err);
+                        legalModalBody.innerHTML = `<div style="color:#ef4444; text-align:center; padding:3rem; font-family:\'Outfit\',sans-serif;">Error loading content. You can view the <a href="${file}" target="_blank" style="color:var(--primary); text-decoration:underline;">${titleText} here</a> directly.</div>`;
+                    }
+                }
+            }
+        });
+
+        // Modal dismissal helper functions
+        const legalModal = document.getElementById('legalModal');
+        const closeLegalBtn = document.querySelector('.close-legal-modal');
+        if (legalModal && closeLegalBtn) {
+            const hideLegalModal = () => {
+                legalModal.classList.remove('show');
+                setTimeout(() => {
+                    legalModal.style.display = 'none';
+                }, 300);
+                document.body.style.overflow = '';
+            };
+            closeLegalBtn.addEventListener('click', hideLegalModal);
+            legalModal.addEventListener('click', (e) => {
+                if (e.target === legalModal) {
+                    hideLegalModal();
                 }
             });
         }
