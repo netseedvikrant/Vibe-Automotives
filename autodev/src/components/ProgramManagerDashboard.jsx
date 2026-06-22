@@ -486,50 +486,6 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
         <TimelineModule initialProgramId={latestProgram?.id} />
       ) : (
         <>
-          {/* Program status overview */}
-          <section className="programs-status-strip glass" style={{ padding: '16px 20px', borderRadius: '12px', marginBottom: '24px' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', color: '#a0a0b0' }}>Program Status Overview</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {programs.length === 0 ? (
-                <span className="text-muted">No programs yet.</span>
-              ) : programs.map(program => (
-                <div key={program.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{program.program_code || program.program_name}</span>
-                  <span className={`status-chip ${program.status === 'Production' ? 'production' : (program.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
-                    {program.status === 'Production' ? '🏭 In Production' : program.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* KPI Section */}
-          <section className="kpi-grid">
-            {kpis.map((kpi, index) => (
-              <motion.div
-                key={kpi.label}
-                className="kpi-card glass glow-border"
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <div className="kpi-header">
-                  <div className="kpi-icon-wrapper" style={{ backgroundColor: `${kpi.color}15`, color: kpi.color }}>
-                    <kpi.icon size={20} />
-                  </div>
-                  <span className={`kpi-change ${kpi.change.startsWith('+') ? 'up' : 'down'}`}>
-                    {kpi.change} <ArrowUpRight size={12} />
-                  </span>
-                </div>
-                <div className="kpi-content">
-                  <span className="kpi-label">{kpi.label}</span>
-                  <span className="kpi-value">{kpi.value}</span>
-                </div>
-              </motion.div>
-            ))}
-          </section>
-
           <div className="dashboard-grid">
             {/* APQP Tracker */}
             <section className="dashboard-card apqp-tracker glass">
