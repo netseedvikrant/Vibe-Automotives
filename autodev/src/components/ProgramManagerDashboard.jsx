@@ -357,10 +357,6 @@ const ProgramManagerDashboard = ({ activeTab = 'Dashboard' }) => {
         <div className="reports-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase' }}>Avg Program Velocity</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--accent)', marginTop: '8px' }}>{avgVelocity ? `${avgVelocity} days/gate` : 'Calculating...'}</div>
-            </div>
-            <div className="glass" style={{ padding: '20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontSize: '0.8rem', color: '#888', textTransform: 'uppercase' }}>Overall DVP&R Pass Rate</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#00ff9d', marginTop: '8px' }}>
                 {validationTests.length > 0 
