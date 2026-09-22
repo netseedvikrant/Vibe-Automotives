@@ -867,7 +867,6 @@ const QualityDashboard = ({ activeTab = 'Dashboard' }) => {
         <div className="audit-section glass" style={{ marginTop: '24px' }}>
           <div className="section-header">
             <h3><History size={20} /> Compliance Audit Trail</h3>
-            <button className="secondary-btn"><Download size={16} /> Export Audit Log</button>
           </div>
           <div className="audit-table-wrapper">
             <table className="audit-table">
