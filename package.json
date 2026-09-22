@@ -1,0 +1,12 @@
+{
+  "name": "vibe-automotives",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VIBE Enterprise Portal - Next-Generation Electric & Autonomous Vehicles Core",
+  "scripts": {
+    "build": "npm --prefix autodev run build && npm --prefix AutoSCM run build && npm --prefix AutoMFG/AutoMFG run build",
+    "build:autodev": "npm --prefix autodev run build",
+    "build:autoscm": "npm --prefix AutoSCM run build",
+    "build:automfg": "npm --prefix AutoMFG/AutoMFG run build"
+  }
+}

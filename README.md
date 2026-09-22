@@ -155,6 +155,31 @@ npm run build
 
 ---
 
+## ☁️ Cloud Deployment (Vercel)
+
+The entire VIBE Enterprise Suite is configured for zero-friction single-project deployment on [Vercel](https://vercel.com).
+
+### 1. Route Map
+* **Consumer Landing Page**: `/` or `/index.html`
+* **Direct Staff Portal**: `/login` or `/direct-login.html`
+* **Enterprise Hub**: `/portal` or `/portal.html`
+* **AutoDev Engineering**: `/autodev`
+* **AutoSCM Supply Chain**: `/autoscm`
+* **AutoMFG Assembly Line**: `/automfg`
+* **Executive Dashboard**: `/ceo`
+
+### 2. Deployment Steps
+1. Push this repository to GitHub.
+2. Go to **[vercel.com/new](https://vercel.com/new)** and import the repository.
+3. Configure Environment Variables in Vercel:
+   * `SUPABASE_URL`
+   * `SUPABASE_ANON_KEY`
+   * `VITE_SUPABASE_URL`
+   * `VITE_SUPABASE_ANON_KEY`
+4. Click **Deploy**.
+
+---
+
 ## 🔒 Security & Policy Architecture
 
 * **Database Hardening**: Row-Level Security (RLS) is enabled on core system relations (`users`, `user_profiles`, `notifications`, etc.).

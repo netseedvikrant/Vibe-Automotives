@@ -431,6 +431,8 @@
         sessionStorage.removeItem('vibe_user');
         localStorage.removeItem('vibe_user');
         localStorage.removeItem('automfg-auth');
+        sessionStorage.removeItem('vibe_session_logged');
+        localStorage.removeItem('vibe_last_activity');
 
         // Clear warning timers
         clearInterval(warningInterval);
@@ -458,13 +460,17 @@
         if (isSynced) {
             const userSession = sessionStorage.getItem('vibe_user');
             if (userSession) {
-                // Set up inactivity timers
-                setupActivityListeners();
-                
-                // If it is the initial load, log a successful terminal session start
+                // If it is the initial load, log a successful terminal session start and reset last activity
                 const isInitialSessionLog = !sessionStorage.getItem('vibe_session_logged');
                 if (isInitialSessionLog) {
                     sessionStorage.setItem('vibe_session_logged', 'true');
+                    localStorage.setItem('vibe_last_activity', Date.now().toString());
+                }
+
+                // Set up inactivity timers
+                setupActivityListeners();
+                
+                if (isInitialSessionLog) {
                     logSessionActivity('session_start', 'New secure terminal session initiated.');
                 }
             }
