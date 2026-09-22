@@ -2,15 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
-  "rewrites": [
-    { "source": "/login", "destination": "/direct-login.html" },
-    { "source": "/staff", "destination": "/direct-login.html" },
-    { "source": "/portal", "destination": "/portal.html" },
-    { "source": "/ceo", "destination": "/ceo-dashboard.html" },
-    { "source": "/autodev", "destination": "/autodev/index.html" },
-    { "source": "/autoscm", "destination": "/AutoSCM/index.html" },
-    { "source": "/automfg", "destination": "/AutoMFG/index.html" }
-  ],
   "headers": [
     {
       "source": "/assets/(.*)",

@@ -2,12 +2,5 @@
   "name": "vibe-automotives",
   "version": "1.0.0",
   "private": true,
-  "description": "VIBE Enterprise Portal - Next-Generation Electric & Autonomous Vehicles Core",
-  "scripts": {
-    "build": "echo Production build ready",
-    "compile": "npm --prefix autodev run build && npm --prefix AutoSCM run build && npm --prefix AutoMFG/AutoMFG run build"
-  },
-  "optionalDependencies": {
-    "@rolldown/binding-linux-x64-gnu": "^1.2.9"
-  }
+  "description": "VIBE Automotives - Consumer Showcase & Enterprise Platform"
 }
