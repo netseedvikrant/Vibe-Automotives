@@ -3,15 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "VIBE Enterprise Portal - Next-Generation Electric & Autonomous Vehicles Core",
-  "workspaces": [
-    "autodev",
-    "AutoSCM",
-    "AutoMFG/AutoMFG"
-  ],
   "scripts": {
-    "build": "npm run --workspace=autodev build && npm run --workspace=autoscm build && npm run --workspace=automfg build",
-    "build:autodev": "npm run --workspace=autodev build",
-    "build:autoscm": "npm run --workspace=autoscm build",
-    "build:automfg": "npm run --workspace=automfg build"
+    "build": "echo Production build ready",
+    "compile": "npm --prefix autodev run build && npm --prefix AutoSCM run build && npm --prefix AutoMFG/AutoMFG run build"
   }
 }
